@@ -1,0 +1,27 @@
+{{- $postId := .Page.File.BaseFileName | default (.Page.Title | urlize) -}}
+{{- $apiBase := .Site.Params.commentSystem.apiUrl | default "http://localhost:3000/api" -}}
+
+<div id="hugo-comment-system-{{ $postId }}" class="hugo-comment-system">
+    <!-- 留言系統容器 -->
+</div>
+
+<link rel="stylesheet" href="{{ .Site.BaseURL }}css/comment-system.css">
+<script>
+(function() {
+    // 動態載入留言系統
+    const commentContainer = document.getElementById('hugo-comment-system-{{ $postId }}');
+    
+    // 載入留言系統 HTML
+    fetch('{{ .Site.BaseURL }}partials/comment-system.html')
+        .then(response => response.text())
+        .then(html => {
+            commentContainer.innerHTML = html;
+            // 初始化留言系統
+            initCommentSystem('{{ $postId }}', '{{ $apiBase }}');
+        })
+        .catch(error => {
+            console.error('載入留言系統失敗:', error);
+            commentContainer.innerHTML = '<p>留言系統載入失敗，請重新整理頁面。</p>';
+        });
+})();
+</script>

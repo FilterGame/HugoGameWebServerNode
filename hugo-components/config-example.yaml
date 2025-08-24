@@ -1,0 +1,5 @@
+params:
+  commentSystem:
+    enabled: true
+    apiUrl: "http://localhost:3000/api"  # 你的 Node.js API 服務器地址
+    # 生產環境中改為: "https://your-domain.com/api"

@@ -1,0 +1,987 @@
+{{ $postId := .Page.File.LogicalName | replaceRE "\\.md$" "" }}
+{{ $apiBase := .Site.Params.commentSystem.apiUrl | default "http://localhost:3000/api" }}
+
+<div id="comment-system" class="comment-system">
+    <div class="comment-header">
+        <h3>留言與評分</h3>
+        <div class="rating-summary" id="rating-summary">
+            <!-- 評分統計將由 JavaScript 動態載入 -->
+        </div>
+    </div>
+
+    <!-- 登入/註冊區域 -->
+    <div id="auth-section" class="auth-section">
+        <div class="auth-toggle">
+            <button id="login-btn" class="auth-btn active">登入</button>
+            <button id="register-btn" class="auth-btn">註冊</button>
+        </div>
+        
+        <div id="login-form" class="auth-form">
+            <input type="email" id="login-email" placeholder="電子信箱" required>
+            <input type="password" id="login-password" placeholder="密碼" required>
+            <button id="login-submit" class="submit-btn">登入</button>
+        </div>
+        
+        <div id="register-form" class="auth-form" style="display: none;">
+            <input type="email" id="register-email" placeholder="電子信箱" required>
+            <input type="text" id="register-nickname" placeholder="暱稱" required maxlength="50">
+            <input type="password" id="register-password" placeholder="密碼 (至少6個字元)" required minlength="6">
+            <button id="register-submit" class="submit-btn">註冊</button>
+        </div>
+        
+        <div id="auth-error" class="error-message"></div>
+    </div>
+
+    <!-- 用戶資訊區域 -->
+    <div id="user-section" class="user-section" style="display: none;">
+        <div class="user-info">
+            <img id="user-avatar" class="user-avatar" alt="頭像">
+            <span id="user-nickname" class="user-nickname"></span>
+            <button id="profile-btn" class="profile-btn">設定</button>
+            <button id="logout-btn" class="logout-btn">登出</button>
+        </div>
+    </div>
+
+    <!-- 個人檔案編輯 -->
+    <div id="profile-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4>個人檔案設定</h4>
+                <span class="close" id="profile-close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="profile-section">
+                    <label for="profile-nickname">暱稱</label>
+                    <input type="text" id="profile-nickname" maxlength="50">
+                </div>
+                <div class="profile-section">
+                    <label for="avatar-upload">頭像</label>
+                    <input type="file" id="avatar-upload" accept="image/*">
+                    <img id="current-avatar" class="avatar-preview" alt="目前頭像">
+                </div>
+                <button id="save-profile" class="submit-btn">儲存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 評分區域 -->
+    <div id="rating-section" class="rating-section" style="display: none;">
+        <h4>為這篇文章評分</h4>
+        <div class="star-rating" id="star-rating">
+            <span class="star" data-rating="1">★</span>
+            <span class="star" data-rating="2">★</span>
+            <span class="star" data-rating="3">★</span>
+            <span class="star" data-rating="4">★</span>
+            <span class="star" data-rating="5">★</span>
+        </div>
+        <div id="rating-message" class="rating-message"></div>
+    </div>
+
+    <!-- 留言輸入區域 -->
+    <div id="comment-form-section" class="comment-form-section" style="display: none;">
+        <h4>發表留言</h4>
+        <div class="comment-form">
+            <textarea id="comment-input" placeholder="寫下你的留言..." maxlength="2000"></textarea>
+            <div class="form-actions">
+                <button id="submit-comment" class="submit-btn">發表留言</button>
+                <span id="char-count" class="char-count">0/2000</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 留言列表 -->
+    <div id="comments-list" class="comments-list">
+        <!-- 留言將由 JavaScript 動態載入 -->
+    </div>
+
+    <!-- 載入更多按鈕 -->
+    <div id="load-more-section" class="load-more-section" style="display: none;">
+        <button id="load-more-btn" class="load-more-btn">載入更多留言</button>
+    </div>
+</div>
+
+<style>
+.comment-system {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.comment-header {
+    border-bottom: 2px solid #e1e5e9;
+    padding-bottom: 1rem;
+    margin-bottom: 2rem;
+}
+
+.rating-summary {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.rating-stars {
+    color: #ffc107;
+    font-size: 1.2rem;
+}
+
+.auth-section {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.auth-toggle {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.auth-btn {
+    padding: 0.5rem 1rem;
+    border: 1px solid #ddd;
+    background: white;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.auth-btn.active {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.auth-form input {
+    width: 100%;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.submit-btn {
+    padding: 0.75rem 1.5rem;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background 0.3s;
+}
+
+.submit-btn:hover {
+    background: #0056b3;
+}
+
+.user-section {
+    background: #e8f5e8;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 2rem;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.user-nickname {
+    font-weight: 600;
+    flex: 1;
+}
+
+.profile-btn, .logout-btn {
+    padding: 0.5rem 1rem;
+    border: 1px solid #ddd;
+    background: white;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.rating-section {
+    background: #fff3cd;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.star-rating {
+    font-size: 2rem;
+    margin: 1rem 0;
+}
+
+.star {
+    color: #ddd;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.star:hover,
+.star.active {
+    color: #ffc107;
+}
+
+.comment-form-section {
+    margin-bottom: 2rem;
+}
+
+.comment-form textarea {
+    width: 100%;
+    min-height: 120px;
+    padding: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    resize: vertical;
+    font-family: inherit;
+    font-size: 1rem;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+}
+
+.char-count {
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.comments-list {
+    margin-top: 2rem;
+}
+
+.comment {
+    border: 1px solid #e1e5e9;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: white;
+}
+
+.comment-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #f1f3f4;
+}
+
+.comment-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.comment-author {
+    font-weight: 600;
+    color: #333;
+}
+
+.comment-date {
+    font-size: 0.85rem;
+    color: #666;
+}
+
+.comment-rating {
+    margin-left: auto;
+    color: #ffc107;
+    font-size: 0.9rem;
+}
+
+.comment-content {
+    margin-bottom: 0.75rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
+.comment-actions {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.85rem;
+}
+
+.comment-action {
+    background: none;
+    border: none;
+    color: #666;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    transition: background 0.3s;
+}
+
+.comment-action:hover {
+    background: #f1f3f4;
+}
+
+.reply-form {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #f1f3f4;
+}
+
+.reply-form textarea {
+    width: 100%;
+    min-height: 80px;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    resize: vertical;
+}
+
+.replies {
+    margin-top: 1rem;
+    padding-left: 2rem;
+    border-left: 2px solid #f1f3f4;
+}
+
+.modal {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.4);
+}
+
+.modal-content {
+    background-color: white;
+    margin: 15% auto;
+    padding: 0;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e1e5e9;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.close {
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.profile-section {
+    margin-bottom: 1rem;
+}
+
+.profile-section label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.profile-section input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.avatar-preview {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-top: 0.5rem;
+}
+
+.load-more-section {
+    text-align: center;
+    margin-top: 2rem;
+}
+
+.load-more-btn {
+    padding: 0.75rem 2rem;
+    background: white;
+    border: 2px solid #007bff;
+    color: #007bff;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.3s;
+}
+
+.load-more-btn:hover {
+    background: #007bff;
+    color: white;
+}
+
+.error-message {
+    color: #dc3545;
+    background: #f8d7da;
+    padding: 0.75rem;
+    border-radius: 4px;
+    margin-top: 1rem;
+}
+
+@media (max-width: 768px) {
+    .comment-system {
+        padding: 0 0.5rem;
+    }
+    
+    .replies {
+        padding-left: 1rem;
+    }
+    
+    .modal-content {
+        margin: 10% auto;
+        width: 95%;
+    }
+}
+</style>
+
+<script>
+class CommentSystem {
+    constructor(postId, apiBase) {
+        this.postId = postId;
+        this.apiBase = apiBase;
+        this.token = localStorage.getItem('commentToken');
+        this.user = null;
+        this.currentPage = 1;
+        this.userRating = null;
+        this.replyingTo = null;
+        
+        this.init();
+    }
+
+    async init() {
+        this.bindEvents();
+        await this.checkAuth();
+        await this.loadComments();
+        this.updateUI();
+    }
+
+    bindEvents() {
+        // 認證相關
+        document.getElementById('login-btn').addEventListener('click', () => this.showAuthForm('login'));
+        document.getElementById('register-btn').addEventListener('click', () => this.showAuthForm('register'));
+        document.getElementById('login-submit').addEventListener('click', () => this.handleLogin());
+        document.getElementById('register-submit').addEventListener('click', () => this.handleRegister());
+        document.getElementById('logout-btn').addEventListener('click', () => this.handleLogout());
+        
+        // 個人檔案
+        document.getElementById('profile-btn').addEventListener('click', () => this.showProfile());
+        document.getElementById('profile-close').addEventListener('click', () => this.hideProfile());
+        document.getElementById('save-profile').addEventListener('click', () => this.saveProfile());
+        document.getElementById('avatar-upload').addEventListener('change', (e) => this.handleAvatarUpload(e));
+        
+        // 評分
+        document.querySelectorAll('.star').forEach(star => {
+            star.addEventListener('click', (e) => this.handleRating(parseInt(e.target.dataset.rating)));
+            star.addEventListener('mouseover', (e) => this.hoverRating(parseInt(e.target.dataset.rating)));
+        });
+        document.getElementById('star-rating').addEventListener('mouseleave', () => this.resetRatingHover());
+        
+        // 留言
+        document.getElementById('submit-comment').addEventListener('click', () => this.submitComment());
+        document.getElementById('comment-input').addEventListener('input', (e) => this.updateCharCount(e));
+        
+        // 載入更多
+        document.getElementById('load-more-btn').addEventListener('click', () => this.loadMoreComments());
+    }
+
+    showAuthForm(type) {
+        document.getElementById('login-btn').classList.toggle('active', type === 'login');
+        document.getElementById('register-btn').classList.toggle('active', type === 'register');
+        document.getElementById('login-form').style.display = type === 'login' ? 'block' : 'none';
+        document.getElementById('register-form').style.display = type === 'register' ? 'block' : 'none';
+    }
+
+    async apiRequest(endpoint, options = {}) {
+        const config = {
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            },
+            ...options
+        };
+
+        if (this.token) {
+            config.headers.Authorization = `Bearer ${this.token}`;
+        }
+
+        const response = await fetch(this.apiBase + endpoint, config);
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || '請求失敗');
+        }
+
+        return data;
+    }
+
+    async checkAuth() {
+        if (this.token) {
+            try {
+                const response = await this.apiRequest('/auth/me');
+                this.user = response.user;
+                await this.loadUserRating();
+            } catch (error) {
+                localStorage.removeItem('commentToken');
+                this.token = null;
+            }
+        }
+    }
+
+    async handleLogin() {
+        const email = document.getElementById('login-email').value;
+        const password = document.getElementById('login-password').value;
+
+        try {
+            const response = await this.apiRequest('/auth/login', {
+                method: 'POST',
+                body: JSON.stringify({ email, password })
+            });
+
+            this.token = response.token;
+            this.user = response.user;
+            localStorage.setItem('commentToken', this.token);
+
+            await this.loadUserRating();
+            this.updateUI();
+            this.clearError();
+        } catch (error) {
+            this.showError(error.message);
+        }
+    }
+
+    async handleRegister() {
+        const email = document.getElementById('register-email').value;
+        const nickname = document.getElementById('register-nickname').value;
+        const password = document.getElementById('register-password').value;
+
+        try {
+            const response = await this.apiRequest('/auth/register', {
+                method: 'POST',
+                body: JSON.stringify({ email, nickname, password })
+            });
+
+            this.token = response.token;
+            this.user = response.user;
+            localStorage.setItem('commentToken', this.token);
+
+            this.updateUI();
+            this.clearError();
+        } catch (error) {
+            this.showError(error.message);
+        }
+    }
+
+    handleLogout() {
+        this.token = null;
+        this.user = null;
+        this.userRating = null;
+        localStorage.removeItem('commentToken');
+        this.updateUI();
+    }
+
+    async showProfile() {
+        try {
+            const response = await this.apiRequest('/users/profile');
+            document.getElementById('profile-nickname').value = response.user.nickname;
+            
+            if (response.user.avatar) {
+                document.getElementById('current-avatar').src = response.user.avatar;
+                document.getElementById('current-avatar').style.display = 'block';
+            }
+            
+            document.getElementById('profile-modal').style.display = 'block';
+        } catch (error) {
+            this.showError(error.message);
+        }
+    }
+
+    hideProfile() {
+        document.getElementById('profile-modal').style.display = 'none';
+    }
+
+    async saveProfile() {
+        const nickname = document.getElementById('profile-nickname').value;
+        
+        try {
+            if (nickname !== this.user.nickname) {
+                await this.apiRequest('/users/profile', {
+                    method: 'PUT',
+                    body: JSON.stringify({ nickname })
+                });
+                this.user.nickname = nickname;
+            }
+            
+            this.hideProfile();
+            this.updateUI();
+        } catch (error) {
+            this.showError(error.message);
+        }
+    }
+
+    async handleAvatarUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('avatar', file);
+
+        try {
+            const response = await fetch(this.apiBase + '/users/avatar', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${this.token}`
+                },
+                body: formData
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+                document.getElementById('current-avatar').src = data.avatar;
+                document.getElementById('current-avatar').style.display = 'block';
+                await this.checkAuth(); // 重新載入用戶資料
+                this.updateUI();
+            } else {
+                throw new Error(data.error);
+            }
+        } catch (error) {
+            this.showError(error.message);
+        }
+    }
+
+    async loadUserRating() {
+        if (!this.user) return;
+        
+        try {
+            const response = await this.apiRequest(`/comments/rating/${this.postId}/user`);
+            this.userRating = response.rating;
+        } catch (error) {
+            console.error('載入用戶評分失敗:', error);
+        }
+    }
+
+    async handleRating(rating) {
+        if (!this.user || !this.user.permissions.canRate) {
+            this.showError('您沒有評分權限');
+            return;
+        }
+
+        try {
+            await this.apiRequest(`/comments/rate/${this.postId}`, {
+                method: 'POST',
+                body: JSON.stringify({ rating })
+            });
+
+            this.userRating = rating;
+            document.getElementById('rating-message').textContent = '評分已儲存！';
+            setTimeout(() => {
+                document.getElementById('rating-message').textContent = '';
+            }, 3000);
+            
+            await this.loadComments(); // 重新載入以更新評分統計
+        } catch (error) {
+            this.showError(error.message);
+        }
+    }
+
+    hoverRating(rating) {
+        this.updateStarDisplay(rating);
+    }
+
+    resetRatingHover() {
+        this.updateStarDisplay(this.userRating || 0);
+    }
+
+    updateStarDisplay(rating) {
+        document.querySelectorAll('.star').forEach((star, index) => {
+            star.classList.toggle('active', index < rating);
+        });
+    }
+
+    async submitComment(parentId = null) {
+        const content = document.getElementById('comment-input').value.trim();
+        if (!content) return;
+
+        if (!this.user || !this.user.permissions.canComment) {
+            this.showError('您沒有留言權限');
+            return;
+        }
+
+        try {
+            await this.apiRequest(`/comments/post/${this.postId}`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    content,
+                    parentComment: parentId
+                })
+            });
+
+            document.getElementById('comment-input').value = '';
+            this.updateCharCount({ target: { value: '' } });
+            await this.loadComments();
+        } catch (error) {
+            this.showError(error.message);
+        }
+    }
+
+    async submitReply(parentId, textarea) {
+        const content = textarea.value.trim();
+        if (!content) return;
+
+        try {
+            await this.apiRequest(`/comments/post/${this.postId}`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    content,
+                    parentComment: parentId
+                })
+            });
+
+            textarea.value = '';
+            await this.loadComments();
+            this.replyingTo = null;
+        } catch (error) {
+            this.showError(error.message);
+        }
+    }
+
+    async loadComments(page = 1) {
+        try {
+            const response = await this.apiRequest(`/comments/post/${this.postId}?page=${page}`);
+            
+            if (page === 1) {
+                this.currentPage = 1;
+                document.getElementById('comments-list').innerHTML = '';
+                this.updateRatingSummary(response.ratings);
+            }
+            
+            this.renderComments(response.comments);
+            this.updateLoadMoreButton(response.pagination);
+            
+            return response;
+        } catch (error) {
+            console.error('載入留言失敗:', error);
+        }
+    }
+
+    async loadMoreComments() {
+        this.currentPage++;
+        await this.loadComments(this.currentPage);
+    }
+
+    updateRatingSummary(ratings) {
+        const summaryDiv = document.getElementById('rating-summary');
+        if (ratings.totalRatings > 0) {
+            const stars = '★'.repeat(Math.round(ratings.averageRating)) + 
+                          '☆'.repeat(5 - Math.round(ratings.averageRating));
+            summaryDiv.innerHTML = `
+                <span class="rating-stars">${stars}</span>
+                <span>${ratings.averageRating.toFixed(1)} (${ratings.totalRatings} 個評分)</span>
+            `;
+        } else {
+            summaryDiv.innerHTML = '<span>尚無評分</span>';
+        }
+    }
+
+    renderComments(comments) {
+        const commentsDiv = document.getElementById('comments-list');
+        
+        comments.forEach(comment => {
+            const commentElement = this.createCommentElement(comment);
+            commentsDiv.appendChild(commentElement);
+        });
+    }
+
+    createCommentElement(comment) {
+        const div = document.createElement('div');
+        div.className = 'comment';
+        
+        const avatarSrc = comment.author.avatar ? 
+            `${this.apiBase.replace('/api', '')}/users/avatar/${comment.author._id}` : 
+            'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMjAiIGZpbGw9IiNlZWUiLz4KPGNpcmNsZSBjeD0iMjAiIGN5PSIxNiIgcj0iNiIgZmlsbD0iIzk5OSIvPgo8cGF0aCBkPSJtOCAzMmMwLTYuNjI3IDUuMzczLTEyIDEyLTEyczEyIDUuMzczIDEyIDEyIiBmaWxsPSIjOTk5Ii8+Cjwvc3ZnPgo=';
+
+        const ratingDisplay = comment.rating ? 
+            `<span class="comment-rating">${'★'.repeat(comment.rating)}</span>` : '';
+
+        div.innerHTML = `
+            <div class="comment-header">
+                <img class="comment-avatar" src="${avatarSrc}" alt="${comment.author.nickname}">
+                <span class="comment-author">${comment.author.nickname}</span>
+                <span class="comment-date">${new Date(comment.createdAt).toLocaleString('zh-TW')}</span>
+                ${ratingDisplay}
+            </div>
+            <div class="comment-content">${comment.content}</div>
+            <div class="comment-actions">
+                <button class="comment-action" onclick="commentSystem.showReplyForm('${comment._id}')">回覆</button>
+                ${this.user && comment.author._id === this.user.id ? 
+                    `<button class="comment-action" onclick="commentSystem.editComment('${comment._id}')">編輯</button>
+                     <button class="comment-action" onclick="commentSystem.deleteComment('${comment._id}')">刪除</button>` : ''}
+            </div>
+            <div id="reply-form-${comment._id}" class="reply-form" style="display: none;">
+                <textarea placeholder="寫下你的回覆..."></textarea>
+                <div class="form-actions">
+                    <button class="submit-btn" onclick="commentSystem.submitReply('${comment._id}', this.parentElement.previousElementSibling)">發表回覆</button>
+                    <button class="comment-action" onclick="commentSystem.hideReplyForm('${comment._id}')">取消</button>
+                </div>
+            </div>
+        `;
+
+        // 加入回覆
+        if (comment.replies && comment.replies.length > 0) {
+            const repliesDiv = document.createElement('div');
+            repliesDiv.className = 'replies';
+            
+            comment.replies.forEach(reply => {
+                const replyElement = this.createCommentElement(reply);
+                repliesDiv.appendChild(replyElement);
+            });
+            
+            div.appendChild(repliesDiv);
+        }
+
+        return div;
+    }
+
+    showReplyForm(commentId) {
+        if (!this.user) {
+            this.showError('請先登入');
+            return;
+        }
+        
+        // 隱藏其他回覆表單
+        document.querySelectorAll('.reply-form').forEach(form => {
+            form.style.display = 'none';
+        });
+        
+        document.getElementById(`reply-form-${commentId}`).style.display = 'block';
+        this.replyingTo = commentId;
+    }
+
+    hideReplyForm(commentId) {
+        document.getElementById(`reply-form-${commentId}`).style.display = 'none';
+        this.replyingTo = null;
+    }
+
+    async deleteComment(commentId) {
+        if (!confirm('確定要刪除這個留言嗎？')) return;
+
+        try {
+            await this.apiRequest(`/comments/${commentId}`, {
+                method: 'DELETE'
+            });
+            await this.loadComments();
+        } catch (error) {
+            this.showError(error.message);
+        }
+    }
+
+    updateLoadMoreButton(pagination) {
+        const section = document.getElementById('load-more-section');
+        const btn = document.getElementById('load-more-btn');
+        
+        if (pagination.hasNext) {
+            section.style.display = 'block';
+            btn.textContent = `載入更多留言 (第 ${pagination.currentPage + 1} 頁)`;
+        } else {
+            section.style.display = 'none';
+        }
+    }
+
+    updateCharCount(event) {
+        const count = event.target.value.length;
+        const display = document.getElementById('char-count');
+        display.textContent = `${count}/2000`;
+        display.style.color = count > 1800 ? '#dc3545' : '#666';
+    }
+
+    updateUI() {
+        const authSection = document.getElementById('auth-section');
+        const userSection = document.getElementById('user-section');
+        const ratingSection = document.getElementById('rating-section');
+        const commentSection = document.getElementById('comment-form-section');
+
+        if (this.user) {
+            authSection.style.display = 'none';
+            userSection.style.display = 'block';
+            
+            // 更新用戶資訊
+            const avatar = document.getElementById('user-avatar');
+            const nickname = document.getElementById('user-nickname');
+            
+            nickname.textContent = this.user.nickname;
+            
+            if (this.user.avatar || this.user._id) {
+                avatar.src = `${this.apiBase.replace('/api', '')}/users/avatar/${this.user.id}`;
+                avatar.style.display = 'block';
+            } else {
+                avatar.style.display = 'none';
+            }
+
+            // 顯示評分和留言區域
+            if (this.user.permissions.canRate) {
+                ratingSection.style.display = 'block';
+                this.updateStarDisplay(this.userRating || 0);
+            }
+            
+            if (this.user.permissions.canComment) {
+                commentSection.style.display = 'block';
+            }
+        } else {
+            authSection.style.display = 'block';
+            userSection.style.display = 'none';
+            ratingSection.style.display = 'none';
+            commentSection.style.display = 'none';
+        }
+    }
+
+    showError(message) {
+        document.getElementById('auth-error').textContent = message;
+        setTimeout(() => {
+            this.clearError();
+        }, 5000);
+    }
+
+    clearError() {
+        document.getElementById('auth-error').textContent = '';
+    }
+}
+
+// 初始化留言系統
+const commentSystem = new CommentSystem('{{ $postId }}', '{{ $apiBase }}');
+
+// 點擊外部關閉 modal
+window.onclick = function(event) {
+    const modal = document.getElementById('profile-modal');
+    if (event.target === modal) {
+        modal.style.display = 'none';
+    }
+}
+</script>

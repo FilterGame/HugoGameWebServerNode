@@ -1,0 +1,1442 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hugo 留言系統 - 功能測試頁</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .test-section {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .test-section h2 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .test-item {
+            background: #f8f9fa;
+            border-left: 4px solid #007bff;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .test-item h3 {
+            color: #495057;
+            margin-bottom: 1rem;
+        }
+
+        .test-item p {
+            margin-bottom: 1rem;
+            color: #6c757d;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .input-row label {
+            min-width: 100px;
+            font-weight: 600;
+        }
+
+        .input-row input,
+        .input-row textarea,
+        .input-row select {
+            flex: 1;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+
+        .input-row textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s;
+            margin-right: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #1e7e34;
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .btn-warning:hover {
+            background: #e0a800;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+
+        .response-box {
+            background: #1e1e1e;
+            color: #f8f8f2;
+            padding: 1rem;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            margin-top: 1rem;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            border: 1px solid #444;
+        }
+
+        .status {
+            padding: 0.75rem;
+            border-radius: 6px;
+            margin-top: 1rem;
+            font-weight: 600;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .star-rating {
+            display: flex;
+            gap: 0.25rem;
+            margin: 0.5rem 0;
+        }
+
+        .star {
+            font-size: 1.5rem;
+            color: #ddd;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .star:hover,
+        .star.active {
+            color: #ffc107;
+        }
+
+        .user-info {
+            background: #e8f5e8;
+            padding: 1rem;
+            border-radius: 6px;
+            margin: 1rem 0;
+            display: none;
+        }
+
+        .avatar-preview {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 1rem;
+        }
+
+        .comments-list {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        .comment-item {
+            border-bottom: 1px solid #eee;
+            padding: 1rem 0;
+        }
+
+        .comment-item:last-child {
+            border-bottom: none;
+        }
+
+        .comment-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .comment-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+        }
+
+        .comment-content {
+            margin-bottom: 0.5rem;
+        }
+
+        .reply {
+            margin-left: 2rem;
+            border-left: 2px solid #ddd;
+            padding-left: 1rem;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .input-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .input-row label {
+                min-width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Hugo 留言系統功能測試</h1>
+            <p>完整功能測試頁面 - 在此測試所有 API 功能並查看詳細回應</p>
+        </div>
+
+        <!-- 系統狀態 -->
+        <div class="test-section">
+            <h2>📊 系統狀態檢查</h2>
+            <div class="test-item">
+                <h3>API 連線測試</h3>
+                <p>檢查後端服務是否正常運行</p>
+                <button class="btn btn-primary" onclick="checkAPIStatus()">檢查 API 狀態</button>
+                <div id="api-status"></div>
+            </div>
+        </div>
+
+        <!-- 用戶認證測試 -->
+        <div class="test-section">
+            <h2>🔐 用戶認證功能</h2>
+            
+            <!-- 註冊測試 -->
+            <div class="test-item">
+                <h3>用戶註冊</h3>
+                <p>測試新用戶註冊功能</p>
+                <div class="input-group">
+                    <div class="input-row">
+                        <label>電子信箱:</label>
+                        <input type="email" id="register-email" placeholder="test@example.com">
+                    </div>
+                    <div class="input-row">
+                        <label>暱稱:</label>
+                        <input type="text" id="register-nickname" placeholder="測試用戶">
+                    </div>
+                    <div class="input-row">
+                        <label>密碼:</label>
+                        <input type="password" id="register-password" placeholder="至少6個字元">
+                    </div>
+                </div>
+                <button class="btn btn-success" onclick="testRegister()">測試註冊</button>
+                <div id="register-response"></div>
+            </div>
+
+            <!-- 登入測試 -->
+            <div class="test-item">
+                <h3>用戶登入</h3>
+                <p>測試用戶登入功能</p>
+                <div class="input-group">
+                    <div class="input-row">
+                        <label>電子信箱:</label>
+                        <input type="email" id="login-email" placeholder="test@example.com">
+                    </div>
+                    <div class="input-row">
+                        <label>密碼:</label>
+                        <input type="password" id="login-password" placeholder="密碼">
+                    </div>
+                </div>
+                <button class="btn btn-success" onclick="testLogin()">測試登入</button>
+                <button class="btn btn-warning" onclick="loginAsAdmin()">管理員登入</button>
+                <button class="btn btn-secondary" onclick="testLogout()">登出</button>
+                <div id="login-response"></div>
+                
+                <!-- 登入後的用戶資訊 -->
+                <div class="user-info" id="user-info">
+                    <h4>目前登入用戶</h4>
+                    <div id="current-user"></div>
+                </div>
+            </div>
+
+            <!-- 取得用戶資訊 -->
+            <div class="test-item">
+                <h3>用戶資訊查詢</h3>
+                <p>測試取得目前登入用戶的詳細資訊</p>
+                <button class="btn btn-primary" onclick="testGetUserInfo()">取得用戶資訊</button>
+                <div id="userinfo-response"></div>
+            </div>
+        </div>
+
+        <!-- 個人檔案管理 -->
+        <div class="test-section">
+            <h2>👤 個人檔案管理</h2>
+            
+            <!-- 檔案查詢 -->
+            <div class="test-item">
+                <h3>查詢個人檔案</h3>
+                <p>取得完整的個人檔案資訊，包含頭像</p>
+                <button class="btn btn-primary" onclick="testGetProfile()">查詢檔案</button>
+                <div id="profile-response"></div>
+            </div>
+
+            <!-- 檔案更新 -->
+            <div class="test-item">
+                <h3>更新個人檔案</h3>
+                <p>修改用戶暱稱</p>
+                <div class="input-group">
+                    <div class="input-row">
+                        <label>新暱稱:</label>
+                        <input type="text" id="new-nickname" placeholder="新的暱稱">
+                    </div>
+                </div>
+                <button class="btn btn-warning" onclick="testUpdateProfile()">更新暱稱</button>
+                <div id="update-profile-response"></div>
+            </div>
+
+            <!-- 頭像上傳 -->
+            <div class="test-item">
+                <h3>頭像上傳</h3>
+                <p>上傳並測試頭像功能 (會自動壓縮至 64x64)</p>
+                <div class="input-group">
+                    <div class="input-row">
+                        <label>選擇頭像:</label>
+                        <input type="file" id="avatar-file" accept="image/*">
+                    </div>
+                </div>
+                <button class="btn btn-success" onclick="testUploadAvatar()">上傳頭像</button>
+                <button class="btn btn-danger" onclick="testDeleteAvatar()">刪除頭像</button>
+                <div id="avatar-response"></div>
+            </div>
+
+            <!-- 密碼修改 -->
+            <div class="test-item">
+                <h3>密碼修改</h3>
+                <p>測試修改密碼功能</p>
+                <div class="input-group">
+                    <div class="input-row">
+                        <label>目前密碼:</label>
+                        <input type="password" id="current-password" placeholder="目前密碼">
+                    </div>
+                    <div class="input-row">
+                        <label>新密碼:</label>
+                        <input type="password" id="new-password" placeholder="新密碼">
+                    </div>
+                </div>
+                <button class="btn btn-warning" onclick="testChangePassword()">修改密碼</button>
+                <div id="password-response"></div>
+            </div>
+        </div>
+
+        <!-- 留言功能測試 -->
+        <div class="test-section">
+            <h2>💬 留言與評分功能</h2>
+            
+            <!-- 文章設定 -->
+            <div class="test-item">
+                <h3>測試文章設定</h3>
+                <p>設定要測試的文章 ID</p>
+                <div class="input-group">
+                    <div class="input-row">
+                        <label>文章 ID:</label>
+                        <input type="text" id="test-post-id" value="test-article-1" placeholder="文章 ID">
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="setTestPostId()">設定文章 ID</button>
+                <div id="post-id-status"></div>
+            </div>
+
+            <!-- 評分測試 -->
+            <div class="test-item">
+                <h3>文章評分</h3>
+                <p>為文章評分 (1-5 星)</p>
+                <div class="star-rating" id="rating-stars">
+                    <span class="star" data-rating="1">★</span>
+                    <span class="star" data-rating="2">★</span>
+                    <span class="star" data-rating="3">★</span>
+                    <span class="star" data-rating="4">★</span>
+                    <span class="star" data-rating="5">★</span>
+                </div>
+                <button class="btn btn-success" onclick="testRating()">提交評分</button>
+                <button class="btn btn-primary" onclick="testGetUserRating()">查詢我的評分</button>
+                <div id="rating-response"></div>
+            </div>
+
+            <!-- 留言測試 -->
+            <div class="test-item">
+                <h3>發表留言</h3>
+                <p>測試留言發表功能（支援標題）</p>
+                <div class="input-group">
+                    <div class="input-row">
+                        <label>留言標題:</label>
+                        <input type="text" id="comment-title" placeholder="留言標題 (選填，最多200字)" maxlength="200">
+                    </div>
+                    <div class="input-row">
+                        <label>留言內容:</label>
+                        <textarea id="comment-content" placeholder="寫下你的留言..."></textarea>
+                    </div>
+                    <div class="input-row">
+                        <label>同時評分:</label>
+                        <select id="comment-rating">
+                            <option value="">不評分</option>
+                            <option value="1">1 星</option>
+                            <option value="2">2 星</option>
+                            <option value="3">3 星</option>
+                            <option value="4">4 星</option>
+                            <option value="5">5 星</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="btn btn-success" onclick="testPostComment()">發表留言</button>
+                <div id="comment-response"></div>
+            </div>
+
+            <!-- 回覆測試 -->
+            <div class="test-item">
+                <h3>回覆留言</h3>
+                <p>測試回覆功能 (需要先有留言存在)</p>
+                <div class="input-group">
+                    <div class="input-row">
+                        <label>父留言 ID:</label>
+                        <input type="text" id="parent-comment-id" placeholder="要回覆的留言 ID">
+                    </div>
+                    <div class="input-row">
+                        <label>回覆內容:</label>
+                        <textarea id="reply-content" placeholder="寫下你的回覆..."></textarea>
+                    </div>
+                </div>
+                <button class="btn btn-success" onclick="testReplyComment()">發表回覆</button>
+                <div id="reply-response"></div>
+            </div>
+
+            <!-- 查詢留言 -->
+            <div class="test-item">
+                <h3>查詢文章留言</h3>
+                <p>載入指定文章的所有留言和評分統計</p>
+                <button class="btn btn-primary" onclick="testGetComments()">載入留言</button>
+                <button class="btn btn-secondary" onclick="testGetComments(2)">載入第二頁</button>
+                <div id="comments-response"></div>
+                
+                <!-- 留言列表顯示 -->
+                <div class="comments-list" id="comments-display" style="display: none;">
+                    <h4>留言列表</h4>
+                    <div id="comments-content"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 管理功能測試 -->
+        <div class="test-section">
+            <h2>⚙️ 管理功能測試</h2>
+            
+            <!-- 管理面板 -->
+            <div class="test-item">
+                <h3>管理面板資訊</h3>
+                <p>取得管理面板統計資料 (需要管理員權限)</p>
+                <button class="btn btn-primary" onclick="testAdminDashboard()">載入面板</button>
+                <div id="admin-dashboard-response"></div>
+            </div>
+
+            <!-- 用戶管理 -->
+            <div class="test-item">
+                <h3>用戶管理</h3>
+                <p>查詢和管理用戶</p>
+                <div class="input-group">
+                    <div class="input-row">
+                        <label>搜尋用戶:</label>
+                        <input type="text" id="user-search" placeholder="電子信箱或暱稱">
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="testGetUsers()">查詢用戶列表</button>
+                <button class="btn btn-warning" onclick="testSearchUsers()">搜尋用戶</button>
+                <div id="users-response"></div>
+            </div>
+
+            <!-- 留言管理 -->
+            <div class="test-item">
+                <h3>留言管理</h3>
+                <p>管理員查看和管理留言</p>
+                <div class="input-group">
+                    <div class="input-row">
+                        <label>留言 ID:</label>
+                        <input type="text" id="manage-comment-id" placeholder="要管理的留言 ID">
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="testGetAdminComments()">查詢所有留言</button>
+                <button class="btn btn-warning" onclick="testHideComment()">隱藏留言</button>
+                <button class="btn btn-danger" onclick="testDeleteAdminComment()">刪除留言</button>
+                <div id="admin-comments-response"></div>
+            </div>
+
+            <!-- 統計資料 -->
+            <div class="test-item">
+                <h3>統計資料</h3>
+                <p>查看詳細的系統統計</p>
+                <button class="btn btn-primary" onclick="testGetStats()">載入統計</button>
+                <div id="stats-response"></div>
+            </div>
+        </div>
+
+        <!-- API 回應日誌 -->
+        <div class="test-section">
+            <h2>📋 API 回應日誌</h2>
+            <div class="test-item">
+                <h3>即時 API 日誌</h3>
+                <p>所有 API 請求和回應的詳細記錄</p>
+                <button class="btn btn-secondary" onclick="clearApiLog()">清空日誌</button>
+                <div class="response-box" id="api-log"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全域變數
+        let authToken = localStorage.getItem('testToken');
+        let currentUser = null;
+        let testPostId = 'test-article-1';
+        let selectedRating = 0;
+
+        const API_BASE = '/api';
+
+        // API 請求函數
+        async function apiRequest(endpoint, options = {}) {
+            const config = {
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...options.headers
+                },
+                ...options
+            };
+
+            if (authToken && !config.headers.Authorization) {
+                config.headers.Authorization = `Bearer ${authToken}`;
+            }
+
+            const requestTime = new Date().toLocaleTimeString();
+            const requestInfo = {
+                method: config.method || 'GET',
+                url: API_BASE + endpoint,
+                headers: config.headers,
+                body: config.body
+            };
+
+            logAPI(`[${requestTime}] 請求: ${config.method || 'GET'} ${endpoint}`, requestInfo);
+
+            try {
+                const response = await fetch(API_BASE + endpoint, config);
+                const responseTime = new Date().toLocaleTimeString();
+                
+                let responseData;
+                const contentType = response.headers.get('content-type');
+                
+                if (contentType && contentType.includes('application/json')) {
+                    responseData = await response.json();
+                } else {
+                    responseData = await response.text();
+                }
+
+                const responseInfo = {
+                    status: response.status,
+                    statusText: response.statusText,
+                    headers: Object.fromEntries(response.headers.entries()),
+                    data: responseData
+                };
+
+                if (response.ok) {
+                    logAPI(`[${responseTime}] 回應: ${response.status} ${response.statusText}`, responseInfo, 'success');
+                } else {
+                    logAPI(`[${responseTime}] 錯誤: ${response.status} ${response.statusText}`, responseInfo, 'error');
+                }
+
+                return { success: response.ok, data: responseData, status: response.status };
+            } catch (error) {
+                const errorTime = new Date().toLocaleTimeString();
+                logAPI(`[${errorTime}] 網路錯誤: ${error.message}`, { error: error.message }, 'error');
+                return { success: false, error: error.message };
+            }
+        }
+
+        // 日誌函數
+        function logAPI(message, data, type = 'info') {
+            const logElement = document.getElementById('api-log');
+            const timestamp = new Date().toLocaleTimeString();
+            
+            const logEntry = document.createElement('div');
+            logEntry.style.marginBottom = '1rem';
+            logEntry.style.paddingBottom = '1rem';
+            logEntry.style.borderBottom = '1px solid #444';
+            
+            let color = '#f8f8f2';
+            if (type === 'success') color = '#a6e22e';
+            if (type === 'error') color = '#f92672';
+            if (type === 'warning') color = '#fd971f';
+            
+            logEntry.innerHTML = `
+                <div style="color: ${color}; font-weight: bold; margin-bottom: 0.5rem;">${message}</div>
+                <div style="color: #75715e; font-size: 0.8rem; margin-bottom: 0.5rem;">${timestamp}</div>
+                <div>${JSON.stringify(data, null, 2)}</div>
+            `;
+            
+            logElement.appendChild(logEntry);
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function clearApiLog() {
+            document.getElementById('api-log').innerHTML = '';
+        }
+
+        // 顯示狀態函數
+        function showStatus(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        // 系統狀態檢查
+        async function checkAPIStatus() {
+            showStatus('api-status', '檢查中...', 'info');
+            
+            const result = await apiRequest('/auth/me');
+            
+            if (result.success) {
+                showStatus('api-status', '✅ API 服務正常運行', 'success');
+                if (result.data.user) {
+                    currentUser = result.data.user;
+                    updateUserDisplay();
+                }
+            } else {
+                showStatus('api-status', '❌ API 服務無法連接', 'error');
+            }
+        }
+
+        // 註冊測試
+        async function testRegister() {
+            const email = document.getElementById('register-email').value;
+            const nickname = document.getElementById('register-nickname').value;
+            const password = document.getElementById('register-password').value;
+
+            if (!email || !nickname || !password) {
+                showStatus('register-response', '請填寫所有欄位', 'error');
+                return;
+            }
+
+            showStatus('register-response', '註冊中...', 'info');
+
+            const result = await apiRequest('/auth/register', {
+                method: 'POST',
+                body: JSON.stringify({ email, nickname, password })
+            });
+
+            if (result.success) {
+                authToken = result.data.token;
+                currentUser = result.data.user;
+                localStorage.setItem('testToken', authToken);
+                updateUserDisplay();
+                showStatus('register-response', '✅ 註冊成功！', 'success');
+            } else {
+                showStatus('register-response', `❌ 註冊失敗: ${result.data?.error || result.error}`, 'error');
+            }
+        }
+
+        // 登入測試
+        async function testLogin() {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+
+            if (!email || !password) {
+                showStatus('login-response', '請填寫電子信箱和密碼', 'error');
+                return;
+            }
+
+            showStatus('login-response', '登入中...', 'info');
+
+            const result = await apiRequest('/auth/login', {
+                method: 'POST',
+                body: JSON.stringify({ email, password })
+            });
+
+            if (result.success) {
+                authToken = result.data.token;
+                currentUser = result.data.user;
+                localStorage.setItem('testToken', authToken);
+                updateUserDisplay();
+                showStatus('login-response', '✅ 登入成功！', 'success');
+            } else {
+                showStatus('login-response', `❌ 登入失敗: ${result.data?.error || result.error}`, 'error');
+            }
+        }
+
+        // 管理員登入
+        async function loginAsAdmin() {
+            // 使用環境變數中的管理員帳號
+            document.getElementById('login-email').value = 'admin@example.com';
+            document.getElementById('login-password').value = 'admin123';
+            await testLogin();
+        }
+
+        // 登出測試
+        function testLogout() {
+            authToken = null;
+            currentUser = null;
+            localStorage.removeItem('testToken');
+            updateUserDisplay();
+            showStatus('login-response', '✅ 已登出', 'success');
+        }
+
+        // 取得用戶資訊
+        async function testGetUserInfo() {
+            if (!authToken) {
+                showStatus('userinfo-response', '請先登入', 'error');
+                return;
+            }
+
+            showStatus('userinfo-response', '查詢中...', 'info');
+
+            const result = await apiRequest('/auth/me');
+
+            if (result.success) {
+                currentUser = result.data.user;
+                updateUserDisplay();
+                showStatus('userinfo-response', '✅ 用戶資訊已更新', 'success');
+            } else {
+                showStatus('userinfo-response', `❌ 查詢失敗: ${result.data?.error || result.error}`, 'error');
+            }
+        }
+
+        // 查詢個人檔案
+        async function testGetProfile() {
+            if (!authToken) {
+                showStatus('profile-response', '請先登入', 'error');
+                return;
+            }
+
+            showStatus('profile-response', '查詢中...', 'info');
+
+            const result = await apiRequest('/users/profile');
+
+            if (result.success) {
+                showStatus('profile-response', '✅ 檔案查詢成功', 'success');
+                
+                // 顯示頭像
+                if (result.data.user.avatar) {
+                    const avatarImg = document.createElement('img');
+                    avatarImg.src = result.data.user.avatar;
+                    avatarImg.className = 'avatar-preview';
+                    document.getElementById('profile-response').appendChild(avatarImg);
+                }
+            } else {
+                showStatus('profile-response', `❌ 查詢失敗: ${result.data?.error || result.error}`, 'error');
+            }
+        }
+
+        // 更新個人檔案
+        async function testUpdateProfile() {
+            if (!authToken) {
+                showStatus('update-profile-response', '請先登入', 'error');
+                return;
+            }
+
+            const nickname = document.getElementById('new-nickname').value;
+            if (!nickname) {
+                showStatus('update-profile-response', '請輸入新暱稱', 'error');
+                return;
+            }
+
+            showStatus('update-profile-response', '更新中...', 'info');
+
+            const result = await apiRequest('/users/profile', {
+                method: 'PUT',
+                body: JSON.stringify({ nickname })
+            });
+
+            if (result.success) {
+                currentUser.nickname = nickname;
+                updateUserDisplay();
+                showStatus('update-profile-response', '✅ 暱稱更新成功', 'success');
+            } else {
+                showStatus('update-profile-response', `❌ 更新失敗: ${result.data?.error || result.error}`, 'error');
+            }
+        }
+
+        // 上傳頭像
+        async function testUploadAvatar() {
+            if (!authToken) {
+                showStatus('avatar-response', '請先登入', 'error');
+                return;
+            }
+
+            const fileInput = document.getElementById('avatar-file');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                showStatus('avatar-response', '請選擇圖片檔案', 'error');
+                return;
+            }
+
+            // 檢查檔案類型
+            if (!file.type.startsWith('image/')) {
+                showStatus('avatar-response', '❌ 請選擇圖片檔案 (JPG, PNG, GIF 等)', 'error');
+                return;
+            }
+
+            // 檢查檔案大小 (100KB = 100000 bytes)
+            const maxSize = 100000;
+            if (file.size > maxSize) {
+                showStatus('avatar-response', `❌ 檔案過大，請選擇小於 ${Math.round(maxSize/1024)}KB 的圖片`, 'error');
+                return;
+            }
+
+            showStatus('avatar-response', '上傳中...', 'info');
+
+            const formData = new FormData();
+            formData.append('avatar', file);
+
+            const requestTime = new Date().toLocaleTimeString();
+            const requestInfo = {
+                method: 'POST',
+                url: API_BASE + '/users/avatar',
+                headers: { 'Authorization': `Bearer ${authToken}` },
+                body: `FormData: avatar=${file.name} (${file.size} bytes, ${file.type})`
+            };
+
+            logAPI(`[${requestTime}] 請求: POST /users/avatar`, requestInfo);
+
+            try {
+                const response = await fetch(API_BASE + '/users/avatar', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: formData
+                });
+
+                const responseTime = new Date().toLocaleTimeString();
+                let result;
+                
+                try {
+                    result = await response.json();
+                } catch (e) {
+                    result = { error: 'Invalid JSON response' };
+                }
+
+                const responseInfo = {
+                    status: response.status,
+                    statusText: response.statusText,
+                    headers: Object.fromEntries(response.headers.entries()),
+                    data: result
+                };
+
+                if (response.ok) {
+                    logAPI(`[${responseTime}] 回應: ${response.status} ${response.statusText}`, responseInfo, 'success');
+                    showStatus('avatar-response', '✅ 頭像上傳成功', 'success');
+                    
+                    // 顯示新頭像
+                    if (result.avatar) {
+                        const avatarImg = document.createElement('img');
+                        avatarImg.src = result.avatar;
+                        avatarImg.className = 'avatar-preview';
+                        avatarImg.style.marginTop = '10px';
+                        document.getElementById('avatar-response').appendChild(avatarImg);
+                    }
+                    
+                    // 更新用戶顯示
+                    await testGetUserInfo();
+                } else {
+                    logAPI(`[${responseTime}] 錯誤: ${response.status} ${response.statusText}`, responseInfo, 'error');
+                    showStatus('avatar-response', `❌ 上傳失敗: ${result.error || '未知錯誤'}`, 'error');
+                }
+            } catch (error) {
+                const errorTime = new Date().toLocaleTimeString();
+                logAPI(`[${errorTime}] 網路錯誤: ${error.message}`, { error: error.message }, 'error');
+                showStatus('avatar-response', `❌ 上傳錯誤: ${error.message}`, 'error');
+            }
+        }
+
+        // 刪除頭像
+        async function testDeleteAvatar() {
+            if (!authToken) {
+                showStatus('avatar-response', '請先登入', 'error');
+                return;
+            }
+
+            showStatus('avatar-response', '刪除中...', 'info');
+
+            const result = await apiRequest('/users/avatar', {
+                method: 'DELETE'
+            });
+
+            if (result.success) {
+                showStatus('avatar-response', '✅ 頭像已刪除', 'success');
+                await testGetUserInfo();
+            } else {
+                showStatus('avatar-response', `❌ 刪除失敗: ${result.data?.error || result.error}`, 'error');
+            }
+        }
+
+        // 修改密碼
+        async function testChangePassword() {
+            if (!authToken) {
+                showStatus('password-response', '請先登入', 'error');
+                return;
+            }
+
+            const currentPassword = document.getElementById('current-password').value;
+            const newPassword = document.getElementById('new-password').value;
+
+            if (!currentPassword || !newPassword) {
+                showStatus('password-response', '請填寫所有密碼欄位', 'error');
+                return;
+            }
+
+            showStatus('password-response', '修改中...', 'info');
+
+            const result = await apiRequest('/users/password', {
+                method: 'PUT',
+                body: JSON.stringify({ currentPassword, newPassword })
+            });
+
+            if (result.success) {
+                showStatus('password-response', '✅ 密碼修改成功', 'success');
+                document.getElementById('current-password').value = '';
+                document.getElementById('new-password').value = '';
+            } else {
+                showStatus('password-response', `❌ 修改失敗: ${result.data?.error || result.error}`, 'error');
+            }
+        }
+
+        // 設定測試文章 ID
+        function setTestPostId() {
+            testPostId = document.getElementById('test-post-id').value || 'test-article-1';
+            showStatus('post-id-status', `✅ 測試文章 ID 設定為: ${testPostId}`, 'success');
+        }
+
+        // 評分功能
+        function initRatingStars() {
+            const stars = document.querySelectorAll('.star');
+            stars.forEach((star, index) => {
+                star.addEventListener('click', () => {
+                    selectedRating = index + 1;
+                    updateStarDisplay(selectedRating);
+                });
+                
+                star.addEventListener('mouseover', () => {
+                    updateStarDisplay(index + 1);
+                });
+            });
+
+            document.getElementById('rating-stars').addEventListener('mouseleave', () => {
+                updateStarDisplay(selectedRating);
+            });
+        }
+
+        function updateStarDisplay(rating) {
+            const stars = document.querySelectorAll('.star');
+            stars.forEach((star, index) => {
+                star.classList.toggle('active', index < rating);
+            });
+        }
+
+        async function testRating() {
+            if (!authToken) {
+                showStatus('rating-response', '請先登入', 'error');
+                return;
+            }
+
+            if (selectedRating === 0) {
+                showStatus('rating-response', '請選擇評分', 'error');
+                return;
+            }
+
+            showStatus('rating-response', '提交評分中...', 'info');
+
+            const result = await apiRequest(`/comments/rate/${testPostId}`, {
+                method: 'POST',
+                body: JSON.stringify({ rating: selectedRating })
+            });
+
+            if (result.success) {
+                showStatus('rating-response', `✅ 評分成功: ${selectedRating} 星`, 'success');
+            } else {
+                showStatus('rating-response', `❌ 評分失敗: ${result.data?.error || result.error}`, 'error');
+            }
+        }
+
+        async function testGetUserRating() {
+            if (!authToken) {
+                showStatus('rating-response', '請先登入', 'error');
+                return;
+            }
+
+            const result = await apiRequest(`/comments/rating/${testPostId}/user`);
+
+            if (result.success) {
+                const rating = result.data.rating;
+                if (rating) {
+                    selectedRating = rating;
+                    updateStarDisplay(rating);
+                    showStatus('rating-response', `✅ 您的評分: ${rating} 星`, 'success');
+                } else {
+                    showStatus('rating-response', '✅ 您尚未評分此文章', 'info');
+                }
+            } else {
+                showStatus('rating-response', `❌ 查詢失敗: ${result.data?.error || result.error}`, 'error');
+            }
+        }
+
+        // 發表留言
+        async function testPostComment() {
+            if (!authToken) {
+                showStatus('comment-response', '請先登入', 'error');
+                return;
+            }
+
+            const title = document.getElementById('comment-title').value;
+            const content = document.getElementById('comment-content').value;
+            const rating = document.getElementById('comment-rating').value;
+
+            if (!content.trim()) {
+                showStatus('comment-response', '請輸入留言內容', 'error');
+                return;
+            }
+
+            showStatus('comment-response', '發表中...', 'info');
+
+            const requestBody = { content };
+            
+            // 如果有標題，加入請求
+            if (title.trim()) {
+                requestBody.title = title.trim();
+            }
+            
+            if (rating) {
+                requestBody.rating = parseInt(rating);
+            }
+
+            const result = await apiRequest(`/comments/post/${testPostId}`, {
+                method: 'POST',
+                body: JSON.stringify(requestBody)
+            });
+
+            if (result.success) {
+                showStatus('comment-response', '✅ 留言發表成功', 'success');
+                document.getElementById('comment-title').value = '';
+                document.getElementById('comment-content').value = '';
+                document.getElementById('comment-rating').value = '';
+                
+                // 如果有留言 ID，顯示給用戶
+                if (result.data.comment?._id) {
+                    showStatus('comment-response', `✅ 留言發表成功 (ID: ${result.data.comment._id})`, 'success');
+                }
+            } else {
+                showStatus('comment-response', `❌ 發表失敗: ${result.data?.error || result.error}`, 'error');
+            }
+        }
+
+        // 回覆留言
+        async function testReplyComment() {
+            if (!authToken) {
+                showStatus('reply-response', '請先登入', 'error');
+                return;
+            }
+
+            const parentId = document.getElementById('parent-comment-id').value;
+            const content = document.getElementById('reply-content').value;
+
+            if (!parentId || !content.trim()) {
+                showStatus('reply-response', '請填寫父留言 ID 和回覆內容', 'error');
+                return;
+            }
+
+            showStatus('reply-response', '回覆中...', 'info');
+
+            const result = await apiRequest(`/comments/post/${testPostId}`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    content,
+                    parentComment: parentId
+                })
+            });
+
+            if (result.success) {
+                showStatus('reply-response', '✅ 回覆發表成功', 'success');
+                document.getElementById('reply-content').value = '';
+            } else {
+                showStatus('reply-response', `❌ 回覆失敗: ${result.data?.error || result.error}`, 'error');
+            }
+        }
+
+        // 查詢留言
+        async function testGetComments(page = 1) {
+            showStatus('comments-response', '載入中...', 'info');
+
+            const result = await apiRequest(`/comments/post/${testPostId}?page=${page}`);
+
+            if (result.success) {
+                showStatus('comments-response', `✅ 載入成功 (第 ${page} 頁)`, 'success');
+                displayComments(result.data);
+            } else {
+                showStatus('comments-response', `❌ 載入失敗: ${result.data?.error || result.error}`, 'error');
+            }
+        }
+
+        function displayComments(data) {
+            const commentsDisplay = document.getElementById('comments-display');
+            const commentsContent = document.getElementById('comments-content');
+            
+            commentsDisplay.style.display = 'block';
+            
+            // 顯示評分統計
+            let ratingInfo = '';
+            if (data.ratings && data.ratings.totalRatings > 0) {
+                const avgRating = data.ratings.averageRating.toFixed(1);
+                const stars = '★'.repeat(Math.round(data.ratings.averageRating)) + 
+                              '☆'.repeat(5 - Math.round(data.ratings.averageRating));
+                ratingInfo = `<p><strong>評分統計:</strong> ${stars} ${avgRating}/5 (${data.ratings.totalRatings} 個評分)</p>`;
+            } else {
+                ratingInfo = '<p><strong>評分統計:</strong> 尚無評分</p>';
+            }
+
+            // 顯示留言
+            let commentsHTML = ratingInfo;
+            
+            if (data.comments && data.comments.length > 0) {
+                commentsHTML += `<p><strong>留言數:</strong> ${data.pagination.totalComments}</p>`;
+                
+                data.comments.forEach(comment => {
+                    commentsHTML += renderComment(comment);
+                });
+                
+                // 分頁資訊
+                if (data.pagination.totalPages > 1) {
+                    commentsHTML += `<p><strong>分頁:</strong> 第 ${data.pagination.currentPage} 頁，共 ${data.pagination.totalPages} 頁</p>`;
+                }
+            } else {
+                commentsHTML += '<p>暫無留言</p>';
+            }
+            
+            commentsContent.innerHTML = commentsHTML;
+        }
+
+        function renderComment(comment, isReply = false) {
+            const ratingDisplay = comment.rating ? `<span style="color: #ffc107;">★${comment.rating}</span>` : '';
+            const replyClass = isReply ? 'reply' : '';
+            const titleDisplay = comment.title ? `<div style="font-weight: bold; margin-bottom: 0.5rem; color: #2c3e50;">${comment.title}</div>` : '';
+            
+            let html = `
+                <div class="comment-item ${replyClass}">
+                    <div class="comment-header">
+                        <strong>${comment.author.nickname}</strong>
+                        <span>${new Date(comment.createdAt).toLocaleString()}</span>
+                        ${ratingDisplay}
+                        <small style="color: #666;">(ID: ${comment._id})</small>
+                    </div>
+                    ${titleDisplay}
+                    <div class="comment-content">${comment.content}</div>
+                </div>
+            `;
+            
+            // 處理回覆
+            if (comment.replies && comment.replies.length > 0) {
+                comment.replies.forEach(reply => {
+                    html += renderComment(reply, true);
+                });
+            }
+            
+            return html;
+        }
+
+        // 管理功能
+        async function testAdminDashboard() {
+            if (!authToken) {
+                showStatus('admin-dashboard-response', '請先登入', 'error');
+                return;
+            }
+
+            showStatus('admin-dashboard-response', '載入中...', 'info');
+
+            const result = await apiRequest('/admin/dashboard');
+
+            if (result.success) {
+                showStatus('admin-dashboard-response', '✅ 管理面板載入成功', 'success');
+            } else {
+                showStatus('admin-dashboard-response', `❌ 載入失敗: ${result.data?.error || result.error}`, 'error');
+            }
+        }
+
+        async function testGetUsers() {
+            if (!authToken) {
+                showStatus('users-response', '請先登入', 'error');
+                return;
+            }
+
+            showStatus('users-response', '查詢中...', 'info');
+
+            const result = await apiRequest('/admin/users');
+
+            if (result.success) {
+                showStatus('users-response', `✅ 查詢成功，共 ${result.data.users.length} 個用戶`, 'success');
+            } else {
+                showStatus('users-response', `❌ 查詢失敗: ${result.data?.error || result.error}`, 'error');
+            }
+        }
+
+        async function testSearchUsers() {
+            const search = document.getElementById('user-search').value;
+            if (!search) {
+                showStatus('users-response', '請輸入搜尋關鍵字', 'error');
+                return;
+            }
+
+            const result = await apiRequest(`/admin/users?search=${encodeURIComponent(search)}`);
+
+            if (result.success) {
+                showStatus('users-response', `✅ 搜尋成功，找到 ${result.data.users.length} 個用戶`, 'success');
+            } else {
+                showStatus('users-response', `❌ 搜尋失敗: ${result.data?.error || result.error}`, 'error');
+            }
+        }
+
+        async function testGetAdminComments() {
+            if (!authToken) {
+                showStatus('admin-comments-response', '請先登入', 'error');
+                return;
+            }
+
+            showStatus('admin-comments-response', '查詢中...', 'info');
+
+            const result = await apiRequest('/admin/comments?includeHidden=true');
+
+            if (result.success) {
+                showStatus('admin-comments-response', `✅ 查詢成功，共 ${result.data.comments.length} 個留言`, 'success');
+            } else {
+                showStatus('admin-comments-response', `❌ 查詢失敗: ${result.data?.error || result.error}`, 'error');
+            }
+        }
+
+        async function testHideComment() {
+            const commentId = document.getElementById('manage-comment-id').value;
+            if (!commentId) {
+                showStatus('admin-comments-response', '請輸入留言 ID', 'error');
+                return;
+            }
+
+            const result = await apiRequest(`/admin/comments/${commentId}/hide`, {
+                method: 'PUT',
+                body: JSON.stringify({ isHidden: true })
+            });
+
+            if (result.success) {
+                showStatus('admin-comments-response', '✅ 留言已隱藏', 'success');
+            } else {
+                showStatus('admin-comments-response', `❌ 操作失敗: ${result.data?.error || result.error}`, 'error');
+            }
+        }
+
+        async function testDeleteAdminComment() {
+            const commentId = document.getElementById('manage-comment-id').value;
+            if (!commentId) {
+                showStatus('admin-comments-response', '請輸入留言 ID', 'error');
+                return;
+            }
+
+            if (!confirm('確定要刪除這個留言嗎？')) {
+                return;
+            }
+
+            const result = await apiRequest(`/admin/comments/${commentId}`, {
+                method: 'DELETE'
+            });
+
+            if (result.success) {
+                showStatus('admin-comments-response', '✅ 留言已刪除', 'success');
+            } else {
+                showStatus('admin-comments-response', `❌ 刪除失敗: ${result.data?.error || result.error}`, 'error');
+            }
+        }
+
+        async function testGetStats() {
+            if (!authToken) {
+                showStatus('stats-response', '請先登入', 'error');
+                return;
+            }
+
+            showStatus('stats-response', '載入中...', 'info');
+
+            const result = await apiRequest('/admin/stats');
+
+            if (result.success) {
+                showStatus('stats-response', '✅ 統計資料載入成功', 'success');
+            } else {
+                showStatus('stats-response', `❌ 載入失敗: ${result.data?.error || result.error}`, 'error');
+            }
+        }
+
+        // 更新用戶顯示
+        function updateUserDisplay() {
+            const userInfo = document.getElementById('user-info');
+            const currentUserDiv = document.getElementById('current-user');
+
+            if (currentUser) {
+                userInfo.style.display = 'block';
+                currentUserDiv.innerHTML = `
+                    <p><strong>暱稱:</strong> ${currentUser.nickname}</p>
+                    <p><strong>電子信箱:</strong> ${currentUser.email}</p>
+                    <p><strong>角色:</strong> ${currentUser.role}</p>
+                    <p><strong>權限:</strong> 
+                        留言:${currentUser.permissions?.canComment ? '✅' : '❌'} | 
+                        評分:${currentUser.permissions?.canRate ? '✅' : '❌'} | 
+                        發文:${currentUser.permissions?.canPost ? '✅' : '❌'}
+                    </p>
+                `;
+            } else {
+                userInfo.style.display = 'none';
+            }
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initRatingStars();
+            
+            // 如果有 token，嘗試載入用戶資訊
+            if (authToken) {
+                testGetUserInfo();
+            }
+            
+            // 設定初始文章 ID
+            setTestPostId();
+            
+            // 顯示歡迎訊息
+            logAPI('🎉 測試頁面已載入', { message: '您可以開始測試所有功能了！' }, 'success');
+        });
+    </script>
+</body>
+</html>

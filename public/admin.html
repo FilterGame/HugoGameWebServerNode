@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理後台 - Hugo 留言系統</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        .header {
+            background: #fff;
+            padding: 1rem 2rem;
+            border-bottom: 1px solid #e1e5e9;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 1.5rem;
+        }
+
+        .nav {
+            background: #34495e;
+            padding: 0 2rem;
+        }
+
+        .nav-list {
+            list-style: none;
+            display: flex;
+            gap: 0;
+        }
+
+        .nav-item {
+            cursor: pointer;
+            padding: 1rem 1.5rem;
+            color: #ecf0f1;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: #2c3e50;
+            border-bottom-color: #3498db;
+        }
+
+        .container {
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            opacity: 0.9;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .table th,
+        .table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #e1e5e9;
+        }
+
+        .table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            margin-right: 0.5rem;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-warning {
+            background: #f39c12;
+            color: white;
+        }
+
+        .btn:hover {
+            opacity: 0.8;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .pagination button {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #ddd;
+            background: white;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .pagination button.active {
+            background: #3498db;
+            color: white;
+        }
+
+        .login-form {
+            max-width: 400px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .alert {
+            padding: 0.75rem 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+    </style>
+</head>
+<body>
+    <div id="loginScreen" class="login-form">
+        <h2 style="text-align: center; margin-bottom: 1.5rem;">管理員登入</h2>
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="email">電子信箱</label>
+                <input type="email" id="email" required>
+            </div>
+            <div class="form-group">
+                <label for="password">密碼</label>
+                <input type="password" id="password" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">登入</button>
+        </form>
+        <div id="loginError"></div>
+    </div>
+
+    <div id="adminPanel" style="display: none;">
+        <header class="header">
+            <h1>Hugo 留言系統 - 管理後台</h1>
+        </header>
+
+        <nav class="nav">
+            <ul class="nav-list">
+                <li class="nav-item active" data-tab="dashboard">儀表板</li>
+                <li class="nav-item" data-tab="users">用戶管理</li>
+                <li class="nav-item" data-tab="comments">留言管理</li>
+                <li class="nav-item" data-tab="stats">統計資料</li>
+            </ul>
+        </nav>
+
+        <div class="container">
+            <div id="dashboard" class="tab-content active">
+                <div class="stats-grid" id="statsGrid">
+                    <!-- 統計卡片將由 JavaScript 動態生成 -->
+                </div>
+                
+                <div class="card">
+                    <h3>最新用戶</h3>
+                    <table class="table" id="recentUsersTable">
+                        <thead>
+                            <tr>
+                                <th>暱稱</th>
+                                <th>電子信箱</th>
+                                <th>註冊時間</th>
+                                <th>狀態</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+                <div class="card">
+                    <h3>最新留言</h3>
+                    <table class="table" id="recentCommentsTable">
+                        <thead>
+                            <tr>
+                                <th>作者</th>
+                                <th>內容</th>
+                                <th>時間</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="users" class="tab-content">
+                <div class="card">
+                    <h3>用戶管理</h3>
+                    <input type="text" class="search-box" id="userSearch" placeholder="搜尋用戶...">
+                    <table class="table" id="usersTable">
+                        <thead>
+                            <tr>
+                                <th>暱稱</th>
+                                <th>電子信箱</th>
+                                <th>角色</th>
+                                <th>狀態</th>
+                                <th>權限</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                    <div class="pagination" id="usersPagination"></div>
+                </div>
+            </div>
+
+            <div id="comments" class="tab-content">
+                <div class="card">
+                    <h3>留言管理</h3>
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                        <input type="text" class="search-box" id="postIdFilter" placeholder="文章 ID 過濾..." style="flex: 1;">
+                        <label style="display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" id="includeHidden"> 顯示隱藏留言
+                        </label>
+                    </div>
+                    <table class="table" id="commentsTable">
+                        <thead>
+                            <tr>
+                                <th>作者</th>
+                                <th>文章 ID</th>
+                                <th>內容</th>
+                                <th>評分</th>
+                                <th>時間</th>
+                                <th>狀態</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                    <div class="pagination" id="commentsPagination"></div>
+                </div>
+            </div>
+
+            <div id="stats" class="tab-content">
+                <div class="card">
+                    <h3>詳細統計</h3>
+                    <div id="detailedStats">
+                        <!-- 詳細統計將由 JavaScript 動態生成 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let authToken = localStorage.getItem('adminToken');
+
+        const API_BASE = '/api';
+
+        async function apiRequest(url, options = {}) {
+            const config = {
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...options.headers
+                },
+                ...options
+            };
+
+            if (authToken) {
+                config.headers.Authorization = `Bearer ${authToken}`;
+            }
+
+            const response = await fetch(API_BASE + url, config);
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'API request failed');
+            }
+
+            return data;
+        }
+
+        function showError(message, elementId = 'loginError') {
+            const errorElement = document.getElementById(elementId);
+            if (errorElement) {
+                errorElement.innerHTML = `<div class="alert alert-error">${message}</div>`;
+            }
+        }
+
+        function showSuccess(message, elementId) {
+            const successElement = document.getElementById(elementId);
+            if (successElement) {
+                successElement.innerHTML = `<div class="alert alert-success">${message}</div>`;
+            }
+        }
+
+        function formatDate(dateString) {
+            return new Date(dateString).toLocaleString('zh-TW');
+        }
+
+        function truncateText(text, maxLength = 100) {
+            return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+        }
+
+        // 登入功能
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const response = await apiRequest('/auth/login', {
+                    method: 'POST',
+                    body: JSON.stringify({ email, password })
+                });
+
+                authToken = response.token;
+                localStorage.setItem('adminToken', authToken);
+                currentUser = response.user;
+
+                if (currentUser.role !== 'admin') {
+                    throw new Error('需要管理員權限');
+                }
+
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('adminPanel').style.display = 'block';
+                
+                loadDashboard();
+            } catch (error) {
+                showError(error.message);
+            }
+        });
+
+        // 檢查現有 token
+        if (authToken) {
+            apiRequest('/auth/me')
+                .then(response => {
+                    currentUser = response.user;
+                    if (currentUser.role === 'admin') {
+                        document.getElementById('loginScreen').style.display = 'none';
+                        document.getElementById('adminPanel').style.display = 'block';
+                        loadDashboard();
+                    } else {
+                        localStorage.removeItem('adminToken');
+                        authToken = null;
+                    }
+                })
+                .catch(() => {
+                    localStorage.removeItem('adminToken');
+                    authToken = null;
+                });
+        }
+
+        // 標籤切換
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const tabName = item.getAttribute('data-tab');
+                
+                // 更新導航
+                document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+                item.classList.add('active');
+                
+                // 更新內容
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                document.getElementById(tabName).classList.add('active');
+                
+                // 載入對應資料
+                switch(tabName) {
+                    case 'dashboard':
+                        loadDashboard();
+                        break;
+                    case 'users':
+                        loadUsers();
+                        break;
+                    case 'comments':
+                        loadComments();
+                        break;
+                    case 'stats':
+                        loadStats();
+                        break;
+                }
+            });
+        });
+
+        // 載入儀表板
+        async function loadDashboard() {
+            try {
+                const data = await apiRequest('/admin/dashboard');
+                
+                // 更新統計卡片
+                const statsGrid = document.getElementById('statsGrid');
+                statsGrid.innerHTML = `
+                    <div class="stat-card">
+                        <div class="stat-number">${data.stats.totalUsers}</div>
+                        <div class="stat-label">總用戶數</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${data.stats.activeUsers}</div>
+                        <div class="stat-label">活躍用戶</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${data.stats.totalComments}</div>
+                        <div class="stat-label">總留言數</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${data.stats.totalRatings}</div>
+                        <div class="stat-label">總評分數</div>
+                    </div>
+                `;
+                
+                // 更新最新用戶表
+                const recentUsersBody = document.querySelector('#recentUsersTable tbody');
+                recentUsersBody.innerHTML = data.recentUsers.map(user => `
+                    <tr>
+                        <td>${user.nickname}</td>
+                        <td>${user.email}</td>
+                        <td>${formatDate(user.createdAt)}</td>
+                        <td>
+                            <span class="status-badge ${user.isActive ? 'status-active' : 'status-inactive'}">
+                                ${user.isActive ? '活躍' : '停用'}
+                            </span>
+                        </td>
+                    </tr>
+                `).join('');
+                
+                // 更新最新留言表
+                const recentCommentsBody = document.querySelector('#recentCommentsTable tbody');
+                recentCommentsBody.innerHTML = data.recentComments.map(comment => `
+                    <tr>
+                        <td>${comment.author.nickname}</td>
+                        <td>${truncateText(comment.content)}</td>
+                        <td>${formatDate(comment.createdAt)}</td>
+                        <td>
+                            <button class="btn btn-warning" onclick="toggleCommentVisibility('${comment._id}', ${!comment.isHidden})">
+                                ${comment.isHidden ? '顯示' : '隱藏'}
+                            </button>
+                            <button class="btn btn-danger" onclick="deleteComment('${comment._id}')">刪除</button>
+                        </td>
+                    </tr>
+                `).join('');
+                
+            } catch (error) {
+                console.error('載入儀表板失敗:', error);
+            }
+        }
+
+        // 載入用戶列表
+        let currentUserPage = 1;
+        async function loadUsers(page = 1, search = '') {
+            try {
+                const data = await apiRequest(`/admin/users?page=${page}&search=${search}`);
+                currentUserPage = page;
+                
+                const usersBody = document.querySelector('#usersTable tbody');
+                usersBody.innerHTML = data.users.map(user => `
+                    <tr>
+                        <td>${user.nickname}</td>
+                        <td>${user.email}</td>
+                        <td>${user.role}</td>
+                        <td>
+                            <span class="status-badge ${user.isActive ? 'status-active' : 'status-inactive'}">
+                                ${user.isActive ? '活躍' : '停用'}
+                            </span>
+                        </td>
+                        <td>
+                            留言: ${user.permissions.canComment ? '✓' : '✗'} |
+                            評分: ${user.permissions.canRate ? '✓' : '✗'} |
+                            發文: ${user.permissions.canPost ? '✓' : '✗'}
+                        </td>
+                        <td>
+                            <button class="btn ${user.isActive ? 'btn-danger' : 'btn-success'}" 
+                                    onclick="toggleUserStatus('${user._id}', ${!user.isActive})">
+                                ${user.isActive ? '停用' : '啟用'}
+                            </button>
+                            <button class="btn btn-primary" onclick="editUserPermissions('${user._id}')">
+                                編輯權限
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+                
+                // 更新分頁
+                updatePagination('usersPagination', data.pagination, (p) => loadUsers(p, search));
+                
+            } catch (error) {
+                console.error('載入用戶失敗:', error);
+            }
+        }
+
+        // 載入留言列表
+        let currentCommentPage = 1;
+        async function loadComments(page = 1, postId = '', includeHidden = false) {
+            try {
+                const params = new URLSearchParams({
+                    page: page.toString(),
+                    includeHidden: includeHidden.toString()
+                });
+                
+                if (postId) params.append('postId', postId);
+                
+                const data = await apiRequest(`/admin/comments?${params}`);
+                currentCommentPage = page;
+                
+                const commentsBody = document.querySelector('#commentsTable tbody');
+                commentsBody.innerHTML = data.comments.map(comment => `
+                    <tr style="${comment.isHidden ? 'opacity: 0.6; background: #fff3cd;' : ''}">
+                        <td>${comment.author.nickname}</td>
+                        <td>${comment.postId}</td>
+                        <td>${truncateText(comment.content)}</td>
+                        <td>${comment.rating || '-'}</td>
+                        <td>${formatDate(comment.createdAt)}</td>
+                        <td>
+                            <span class="status-badge ${comment.isHidden ? 'status-inactive' : 'status-active'}">
+                                ${comment.isHidden ? '隱藏' : '顯示'}
+                            </span>
+                        </td>
+                        <td>
+                            <button class="btn btn-warning" onclick="toggleCommentVisibility('${comment._id}', ${!comment.isHidden})">
+                                ${comment.isHidden ? '顯示' : '隱藏'}
+                            </button>
+                            <button class="btn btn-danger" onclick="deleteComment('${comment._id}')">刪除</button>
+                        </td>
+                    </tr>
+                `).join('');
+                
+                // 更新分頁
+                updatePagination('commentsPagination', data.pagination, (p) => {
+                    const postIdFilter = document.getElementById('postIdFilter').value;
+                    const includeHidden = document.getElementById('includeHidden').checked;
+                    loadComments(p, postIdFilter, includeHidden);
+                });
+                
+            } catch (error) {
+                console.error('載入留言失敗:', error);
+            }
+        }
+
+        // 載入統計
+        async function loadStats() {
+            try {
+                const data = await apiRequest('/admin/stats');
+                
+                const statsDiv = document.getElementById('detailedStats');
+                statsDiv.innerHTML = `
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+                        <div>
+                            <h4>用戶統計</h4>
+                            <table class="table">
+                                <tr><td>總用戶數</td><td>${data.users.totalUsers || 0}</td></tr>
+                                <tr><td>活躍用戶</td><td>${data.users.activeUsers || 0}</td></tr>
+                                <tr><td>管理員</td><td>${data.users.adminUsers || 0}</td></tr>
+                            </table>
+                        </div>
+                        <div>
+                            <h4>留言統計</h4>
+                            <table class="table">
+                                <tr><td>總留言數</td><td>${data.comments.totalComments || 0}</td></tr>
+                                <tr><td>可見留言</td><td>${data.comments.visibleComments || 0}</td></tr>
+                                <tr><td>隱藏留言</td><td>${data.comments.hiddenComments || 0}</td></tr>
+                                <tr><td>已刪除留言</td><td>${data.comments.deletedComments || 0}</td></tr>
+                            </table>
+                        </div>
+                        <div>
+                            <h4>評分統計</h4>
+                            <table class="table">
+                                <tr><td>總評分數</td><td>${data.ratings.totalRatings || 0}</td></tr>
+                                <tr><td>平均評分</td><td>${data.ratings.averageRating ? data.ratings.averageRating.toFixed(2) : 0}</td></tr>
+                            </table>
+                        </div>
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('載入統計失敗:', error);
+            }
+        }
+
+        // 分頁功能
+        function updatePagination(elementId, pagination, onPageChange) {
+            const paginationDiv = document.getElementById(elementId);
+            let buttons = [];
+            
+            if (pagination.hasPrev) {
+                buttons.push(`<button onclick="${onPageChange.name}(${pagination.currentPage - 1})">上一頁</button>`);
+            }
+            
+            for (let i = Math.max(1, pagination.currentPage - 2); i <= Math.min(pagination.totalPages, pagination.currentPage + 2); i++) {
+                buttons.push(`<button class="${i === pagination.currentPage ? 'active' : ''}" onclick="${onPageChange.name}(${i})">${i}</button>`);
+            }
+            
+            if (pagination.hasNext) {
+                buttons.push(`<button onclick="${onPageChange.name}(${pagination.currentPage + 1})">下一頁</button>`);
+            }
+            
+            paginationDiv.innerHTML = buttons.join('');
+        }
+
+        // 用戶管理功能
+        async function toggleUserStatus(userId, isActive) {
+            try {
+                await apiRequest(`/admin/users/${userId}/status`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ isActive })
+                });
+                loadUsers(currentUserPage);
+            } catch (error) {
+                alert('操作失敗: ' + error.message);
+            }
+        }
+
+        function editUserPermissions(userId) {
+            // 簡化版權限編輯（可擴展為彈窗形式）
+            const canComment = confirm('允許留言？');
+            const canRate = confirm('允許評分？');
+            const canPost = confirm('允許發文？');
+            
+            apiRequest(`/admin/users/${userId}/permissions`, {
+                method: 'PUT',
+                body: JSON.stringify({
+                    permissions: { canComment, canRate, canPost }
+                })
+            }).then(() => {
+                loadUsers(currentUserPage);
+            }).catch(error => {
+                alert('操作失敗: ' + error.message);
+            });
+        }
+
+        // 留言管理功能
+        async function toggleCommentVisibility(commentId, isHidden) {
+            try {
+                await apiRequest(`/admin/comments/${commentId}/hide`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ isHidden })
+                });
+                loadComments(currentCommentPage);
+                if (document.getElementById('dashboard').classList.contains('active')) {
+                    loadDashboard();
+                }
+            } catch (error) {
+                alert('操作失敗: ' + error.message);
+            }
+        }
+
+        async function deleteComment(commentId) {
+            if (!confirm('確定要刪除這個留言嗎？此操作無法復原。')) {
+                return;
+            }
+            
+            try {
+                await apiRequest(`/admin/comments/${commentId}`, {
+                    method: 'DELETE'
+                });
+                loadComments(currentCommentPage);
+                if (document.getElementById('dashboard').classList.contains('active')) {
+                    loadDashboard();
+                }
+            } catch (error) {
+                alert('操作失敗: ' + error.message);
+            }
+        }
+
+        // 搜尋功能
+        document.getElementById('userSearch').addEventListener('input', (e) => {
+            loadUsers(1, e.target.value);
+        });
+
+        document.getElementById('postIdFilter').addEventListener('input', (e) => {
+            const includeHidden = document.getElementById('includeHidden').checked;
+            loadComments(1, e.target.value, includeHidden);
+        });
+
+        document.getElementById('includeHidden').addEventListener('change', (e) => {
+            const postIdFilter = document.getElementById('postIdFilter').value;
+            loadComments(1, postIdFilter, e.target.checked);
+        });
+    </script>
+</body>
+</html>
