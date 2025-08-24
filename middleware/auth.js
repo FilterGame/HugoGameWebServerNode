@@ -34,6 +34,21 @@ const requireAdmin = (req, res, next) => {
   next();
 };
 
+const requireEmailVerification = (req, res, next) => {
+  // Skip check if email verification is disabled
+  if (process.env.EMAIL_VERIFICATION_ENABLED !== 'true') {
+    return next();
+  }
+
+  if (!req.user.emailVerified) {
+    return res.status(403).json({ 
+      error: 'Email verification required. Please verify your email address before posting or rating.',
+      requiresEmailVerification: true 
+    });
+  }
+  next();
+};
+
 const checkPermission = (permission) => {
   return (req, res, next) => {
     if (!req.user.permissions[permission]) {
@@ -46,5 +61,6 @@ const checkPermission = (permission) => {
 module.exports = {
   authenticate,
   requireAdmin,
+  requireEmailVerification,
   checkPermission
 };

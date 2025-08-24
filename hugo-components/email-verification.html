@@ -1,0 +1,538 @@
+{{ if .Site.Params.commentSystem.enabled }}
+<div id="email-verification-component" style="display: none;">
+    <div class="email-verification-notice">
+        <div class="verification-icon">📧</div>
+        <h3>請驗證您的電子郵件地址</h3>
+        <p>您需要驗證您的電子郵件地址才能發表留言和評分。</p>
+        <p>請檢查您的信箱並點擊驗證連結，或點擊下方按鈕重新發送驗證郵件。</p>
+        
+        <div class="verification-actions">
+            <button id="resend-verification-btn" class="btn btn-primary">
+                重新發送驗證郵件
+            </button>
+        </div>
+        
+        <div id="verification-message" class="verification-message"></div>
+        
+        <div class="verification-info">
+            <small>
+                <strong>注意：</strong>
+                <ul>
+                    <li>驗證郵件有效期為24小時</li>
+                    <li>每5分鐘只能重新發送一次</li>
+                    <li>請檢查垃圾郵件資料夾</li>
+                </ul>
+            </small>
+        </div>
+    </div>
+</div>
+
+<div id="email-verification-success" style="display: none;">
+    <div class="verification-success">
+        <div class="success-icon">✅</div>
+        <h3>電子郵件驗證成功！</h3>
+        <p>您現在可以發表留言和評分了。</p>
+    </div>
+</div>
+
+<!-- Email verification modal for when clicking verification link -->
+<div id="email-verification-modal" class="verification-modal" style="display: none;">
+    <div class="verification-modal-content">
+        <div id="verification-status" class="verification-status">
+            <div class="verification-icon">📧</div>
+            <h3 id="verification-title">正在驗證電子郵件...</h3>
+            <p id="verification-text">請稍候，正在處理您的驗證請求...</p>
+            <div class="loading-spinner"></div>
+        </div>
+        <div class="verification-actions" id="verification-actions" style="display: none;">
+            <button id="go-back-btn" class="btn btn-primary">返回首頁 (<span id="countdown">5</span>)</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.email-verification-notice {
+    background: linear-gradient(135deg, #fef7cd 0%, #fef3c7 100%);
+    border: 1px solid #f59e0b;
+    border-radius: 12px;
+    padding: 24px;
+    margin: 20px 0;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(245, 158, 11, 0.1);
+}
+
+.verification-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.email-verification-notice h3 {
+    color: #92400e;
+    margin: 0 0 16px 0;
+    font-size: 20px;
+}
+
+.email-verification-notice p {
+    color: #78350f;
+    margin: 8px 0;
+    line-height: 1.6;
+}
+
+.verification-actions {
+    margin: 20px 0;
+}
+
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.2s;
+}
+
+.btn-primary {
+    background: #3b82f6;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #2563eb;
+    transform: translateY(-1px);
+}
+
+.btn-primary:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.verification-message {
+    margin: 16px 0;
+    padding: 12px;
+    border-radius: 6px;
+    font-weight: 500;
+}
+
+.verification-message.success {
+    background: #d1fae5;
+    color: #065f46;
+    border: 1px solid #34d399;
+}
+
+.verification-message.error {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #f87171;
+}
+
+.verification-message.info {
+    background: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #60a5fa;
+}
+
+.verification-info {
+    margin-top: 20px;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 8px;
+    text-align: left;
+}
+
+.verification-info ul {
+    margin: 8px 0 0 0;
+    padding-left: 16px;
+}
+
+.verification-info li {
+    margin: 4px 0;
+    color: #78350f;
+}
+
+.verification-success {
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    border: 1px solid #10b981;
+    border-radius: 12px;
+    padding: 24px;
+    margin: 20px 0;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(16, 185, 129, 0.1);
+}
+
+.success-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.verification-success h3 {
+    color: #065f46;
+    margin: 0 0 12px 0;
+    font-size: 20px;
+}
+
+.verification-success p {
+    color: #047857;
+    margin: 0;
+    font-size: 16px;
+}
+
+/* Verification Modal Styles */
+.verification-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+
+.verification-modal-content {
+    background: white;
+    border-radius: 16px;
+    padding: 40px;
+    max-width: 500px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    position: relative;
+}
+
+.verification-status h3 {
+    color: #1f2937;
+    margin: 16px 0 12px 0;
+    font-size: 24px;
+}
+
+.verification-status p {
+    color: #6b7280;
+    margin: 8px 0 24px 0;
+    font-size: 16px;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f4f6;
+    border-top: 4px solid #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.verification-status.success .verification-icon {
+    color: #10b981;
+    font-size: 64px;
+    margin-bottom: 16px;
+}
+
+.verification-status.success h3 {
+    color: #065f46;
+}
+
+.verification-status.success p {
+    color: #047857;
+}
+
+.verification-status.error .verification-icon {
+    color: #ef4444;
+    font-size: 64px;
+    margin-bottom: 16px;
+}
+
+.verification-status.error h3 {
+    color: #991b1b;
+}
+
+.verification-status.error p {
+    color: #dc2626;
+}
+
+@media (max-width: 768px) {
+    .email-verification-notice,
+    .verification-success {
+        padding: 20px 16px;
+        margin: 16px 0;
+    }
+    
+    .verification-icon,
+    .success-icon {
+        font-size: 36px;
+    }
+    
+    .btn {
+        padding: 10px 20px;
+        font-size: 14px;
+    }
+}
+</style>
+
+<script>
+class EmailVerificationManager {
+    constructor(apiUrl, token) {
+        this.apiUrl = apiUrl;
+        this.token = token;
+        this.init();
+    }
+
+    init() {
+        this.checkVerificationFromURL();
+        this.setupEventListeners();
+    }
+
+    // Check if this is a verification page from email link
+    checkVerificationFromURL() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const verificationToken = urlParams.get('verify_token') || urlParams.get('token');
+        
+        if (verificationToken) {
+            this.showVerificationModal();
+            this.verifyEmailToken(verificationToken);
+        }
+    }
+
+    setupEventListeners() {
+        const resendBtn = document.getElementById('resend-verification-btn');
+        if (resendBtn) {
+            resendBtn.addEventListener('click', () => this.resendVerificationEmail());
+        }
+    }
+
+    async verifyEmailToken(token) {
+        try {
+            const response = await fetch(`${this.apiUrl}/auth/verify-email?token=${token}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                this.showVerificationModalSuccess(data.message);
+                // Remove token from URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+                // Start countdown and redirect
+                this.startRedirectCountdown();
+            } else {
+                this.showVerificationModalError(data.error || '驗證失敗');
+                this.startRedirectCountdown();
+            }
+        } catch (error) {
+            console.error('Verification error:', error);
+            this.showVerificationModalError('驗證過程中發生錯誤');
+            this.startRedirectCountdown();
+        }
+    }
+
+    async resendVerificationEmail() {
+        const resendBtn = document.getElementById('resend-verification-btn');
+        
+        if (!this.token) {
+            this.showMessage('請先登入再重新發送驗證郵件', 'error');
+            return;
+        }
+
+        resendBtn.disabled = true;
+        resendBtn.textContent = '發送中...';
+
+        try {
+            const response = await fetch(`${this.apiUrl}/auth/resend-verification`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.token}`
+                }
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                this.showMessage(data.message, 'success');
+                // Start cooldown timer
+                this.startCooldown(5 * 60); // 5 minutes
+            } else {
+                this.showMessage(data.error || '重新發送失敗', 'error');
+                resendBtn.disabled = false;
+                resendBtn.textContent = '重新發送驗證郵件';
+            }
+        } catch (error) {
+            console.error('Resend error:', error);
+            this.showMessage('發送過程中發生錯誤', 'error');
+            resendBtn.disabled = false;
+            resendBtn.textContent = '重新發送驗證郵件';
+        }
+    }
+
+    startCooldown(seconds) {
+        const resendBtn = document.getElementById('resend-verification-btn');
+        let remainingSeconds = seconds;
+
+        const updateButton = () => {
+            if (remainingSeconds > 0) {
+                const minutes = Math.floor(remainingSeconds / 60);
+                const secs = remainingSeconds % 60;
+                resendBtn.textContent = `請等待 ${minutes}:${secs.toString().padStart(2, '0')}`;
+                remainingSeconds--;
+                setTimeout(updateButton, 1000);
+            } else {
+                resendBtn.disabled = false;
+                resendBtn.textContent = '重新發送驗證郵件';
+            }
+        };
+
+        updateButton();
+    }
+
+    showMessage(message, type = 'info') {
+        const messageDiv = document.getElementById('verification-message');
+        if (messageDiv) {
+            messageDiv.textContent = message;
+            messageDiv.className = `verification-message ${type}`;
+            messageDiv.style.display = 'block';
+        }
+    }
+
+    showVerificationSuccess(message) {
+        const successDiv = document.getElementById('email-verification-success');
+        const noticeDiv = document.getElementById('email-verification-component');
+        
+        if (successDiv && noticeDiv) {
+            noticeDiv.style.display = 'none';
+            successDiv.style.display = 'block';
+            
+            // Update message if provided
+            const messageP = successDiv.querySelector('p');
+            if (messageP && message) {
+                messageP.textContent = message;
+            }
+        }
+    }
+
+    // Check if user needs email verification
+    checkEmailVerificationStatus(user) {
+        const emailVerificationEnabled = {{ if .Site.Params.commentSystem.emailVerificationEnabled }}true{{ else }}false{{ end }};
+        
+        if (!emailVerificationEnabled) {
+            return false; // Verification not required
+        }
+
+        if (!user || !user.emailVerified) {
+            this.showVerificationNotice();
+            return true; // Verification required
+        }
+
+        return false; // Already verified
+    }
+
+    showVerificationNotice() {
+        const component = document.getElementById('email-verification-component');
+        if (component) {
+            component.style.display = 'block';
+        }
+    }
+
+    hideVerificationNotice() {
+        const component = document.getElementById('email-verification-component');
+        if (component) {
+            component.style.display = 'none';
+        }
+    }
+
+    showVerificationModal() {
+        const modal = document.getElementById('email-verification-modal');
+        if (modal) {
+            modal.style.display = 'flex';
+        }
+    }
+
+    hideVerificationModal() {
+        const modal = document.getElementById('email-verification-modal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+
+    showVerificationModalSuccess(message) {
+        const statusDiv = document.getElementById('verification-status');
+        const titleEl = document.getElementById('verification-title');
+        const textEl = document.getElementById('verification-text');
+        const spinner = statusDiv.querySelector('.loading-spinner');
+        const actionsDiv = document.getElementById('verification-actions');
+
+        statusDiv.className = 'verification-status success';
+        titleEl.textContent = '驗證成功！';
+        textEl.textContent = message || '您的電子郵件已成功驗證，現在可以發表留言和評分了。';
+        
+        if (spinner) {
+            spinner.style.display = 'none';
+        }
+        
+        actionsDiv.style.display = 'block';
+    }
+
+    showVerificationModalError(error) {
+        const statusDiv = document.getElementById('verification-status');
+        const titleEl = document.getElementById('verification-title');
+        const textEl = document.getElementById('verification-text');
+        const spinner = statusDiv.querySelector('.loading-spinner');
+        const actionsDiv = document.getElementById('verification-actions');
+
+        statusDiv.className = 'verification-status error';
+        titleEl.textContent = '驗證失敗';
+        textEl.textContent = error || '驗證過程中發生錯誤，請重試或聯繫客服。';
+        
+        if (spinner) {
+            spinner.style.display = 'none';
+        }
+        
+        actionsDiv.style.display = 'block';
+    }
+
+    startRedirectCountdown() {
+        const goBackBtn = document.getElementById('go-back-btn');
+        const countdownSpan = document.getElementById('countdown');
+        let countdown = 5;
+
+        const updateCountdown = () => {
+            countdownSpan.textContent = countdown;
+            
+            if (countdown <= 0) {
+                window.location.href = window.location.pathname; // Redirect to same page without query params
+            } else {
+                countdown--;
+                setTimeout(updateCountdown, 1000);
+            }
+        };
+
+        if (goBackBtn) {
+            goBackBtn.addEventListener('click', () => {
+                window.location.href = window.location.pathname;
+            });
+        }
+
+        updateCountdown();
+    }
+}
+
+// Initialize email verification manager when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    const apiUrl = '{{ .Site.Params.commentSystem.apiUrl }}';
+    const token = localStorage.getItem('authToken');
+    
+    window.emailVerificationManager = new EmailVerificationManager(apiUrl, token);
+});
+</script>
+{{ end }}

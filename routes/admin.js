@@ -6,6 +6,7 @@ const PostRating = require('../models/PostRating');
 const IPBlacklist = require('../models/IPBlacklist');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const { getClientIP } = require('../middleware/ipCheck');
+const { tracker } = require('../middleware/invalidRequestTracker');
 
 const router = express.Router();
 
@@ -196,7 +197,7 @@ router.get('/comments', async (req, res) => {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .select('+authorIP');
+      .select('+authorIP title postId content rating isHidden isDeleted createdAt updatedAt');
 
     const totalComments = await Comment.countDocuments(searchQuery);
 
@@ -530,5 +531,109 @@ function validateIPFormat(ip, type) {
 
   return { valid: true };
 }
+
+// 無效請求管理
+router.get('/invalid-requests', async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const ip = req.query.ip || '';
+
+    const result = tracker.getRequests(page, limit, ip);
+
+    res.json(result);
+  } catch (error) {
+    console.error('Get invalid requests error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.get('/invalid-requests/stats', async (req, res) => {
+  try {
+    const stats = tracker.getStats();
+    res.json(stats);
+  } catch (error) {
+    console.error('Get invalid requests stats error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.delete('/invalid-requests/clear', async (req, res) => {
+  try {
+    tracker.clearRequests();
+    res.json({ message: '無效請求記錄已清空' });
+  } catch (error) {
+    console.error('Clear invalid requests error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.delete('/invalid-requests/:requestId', async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    tracker.removeRequest(parseFloat(requestId));
+    res.json({ message: '無效請求記錄已刪除' });
+  } catch (error) {
+    console.error('Remove invalid request error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.get('/invalid-requests/by-ip/:ip', async (req, res) => {
+  try {
+    const { ip } = req.params;
+    const requests = tracker.getRequestsByIP(ip);
+    res.json({ requests, total: requests.length });
+  } catch (error) {
+    console.error('Get requests by IP error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// 將IP加入黑名單 (從無效請求管理頁面)
+router.post('/invalid-requests/blacklist-ip', [
+  body('ip').isLength({ min: 7, max: 45 }).trim(),
+  body('reason').optional().isLength({ max: 500 }).trim(),
+  body('type').optional().isIn(['exact', 'subnet', 'range']).default('exact')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { ip, reason, type = 'exact' } = req.body;
+
+    // 檢查是否已存在
+    const existingEntry = await IPBlacklist.findOne({ ip });
+    if (existingEntry) {
+      return res.status(400).json({ error: 'IP 已存在於黑名單中' });
+    }
+
+    // 驗證 IP 格式
+    const ipValidation = validateIPFormat(ip, type);
+    if (!ipValidation.valid) {
+      return res.status(400).json({ error: ipValidation.error });
+    }
+
+    const blacklistEntry = new IPBlacklist({
+      ip,
+      type,
+      reason: reason || '從無效請求管理中加入',
+      createdBy: req.user._id
+    });
+
+    await blacklistEntry.save();
+    await blacklistEntry.populate('createdBy', 'nickname email');
+
+    res.status(201).json({
+      message: 'IP 已加入黑名單',
+      entry: blacklistEntry
+    });
+  } catch (error) {
+    console.error('Blacklist IP from invalid requests error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
 
 module.exports = router;

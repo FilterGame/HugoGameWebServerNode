@@ -2,7 +2,7 @@ const express = require('express');
 const { body, validationResult, param } = require('express-validator');
 const Comment = require('../models/Comment');
 const PostRating = require('../models/PostRating');
-const { authenticate, checkPermission } = require('../middleware/auth');
+const { authenticate, checkPermission, requireEmailVerification } = require('../middleware/auth');
 const { getClientIP, checkIPBlacklist } = require('../middleware/ipCheck');
 
 const router = express.Router();
@@ -83,6 +83,7 @@ router.get('/post/:postId', async (req, res) => {
 router.post('/post/:postId', [
   checkIPBlacklist,
   authenticate,
+  requireEmailVerification,
   checkPermission('canComment'),
   param('postId').isLength({ min: 1 }),
   body('title').optional().isLength({ max: 200 }).trim(),
@@ -215,6 +216,7 @@ router.delete('/:commentId', [
 
 router.post('/rate/:postId', [
   authenticate,
+  requireEmailVerification,
   checkPermission('canRate'),
   param('postId').isLength({ min: 1 }),
   body('rating').isInt({ min: 1, max: 5 })

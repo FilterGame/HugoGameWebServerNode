@@ -1,0 +1,206 @@
+{{ if .Site.Params.commentSystem.enabled }}
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>電子郵件驗證 - {{ .Site.Title }}</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .verification-container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .verification-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        .verification-title {
+            font-size: 28px;
+            font-weight: 600;
+            margin: 0 0 16px 0;
+            color: #1f2937;
+        }
+
+        .verification-message {
+            font-size: 16px;
+            color: #6b7280;
+            margin: 0 0 32px 0;
+        }
+
+        .status-loading {
+            color: #3b82f6;
+        }
+
+        .status-success {
+            color: #10b981;
+        }
+
+        .status-error {
+            color: #ef4444;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 24px;
+            padding: 12px 24px;
+            background: #3b82f6;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        .back-link:hover {
+            background: #2563eb;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f4f6;
+            border-radius: 50%;
+            border-top-color: #3b82f6;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 16px;
+            }
+            
+            .verification-container {
+                padding: 24px;
+            }
+            
+            .verification-title {
+                font-size: 24px;
+            }
+            
+            .verification-icon {
+                font-size: 48px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="verification-container">
+        <div id="verification-content">
+            <div class="verification-icon">📧</div>
+            <h1 class="verification-title">驗證電子郵件</h1>
+            <p class="verification-message status-loading">
+                <span class="loading-spinner"></span>
+                正在驗證您的電子郵件地址...
+            </p>
+        </div>
+        
+        <a href="{{ .Site.BaseURL }}" class="back-link">返回首頁</a>
+    </div>
+
+    <script>
+    class EmailVerification {
+        constructor() {
+            this.apiUrl = '{{ .Site.Params.commentSystem.apiUrl }}';
+            this.init();
+        }
+
+        init() {
+            this.verifyEmail();
+        }
+
+        async verifyEmail() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+
+            if (!token) {
+                this.showError('驗證連結無效', '缺少驗證令牌。請檢查您的電子郵件中的完整連結。');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${this.apiUrl}/auth/verify-email?token=${token}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    this.showSuccess('驗證成功！', data.message || '您的電子郵件已成功驗證，現在可以發表留言和評分了。');
+                    
+                    // Redirect to home page after 3 seconds
+                    setTimeout(() => {
+                        window.location.href = '{{ .Site.BaseURL }}';
+                    }, 3000);
+                } else {
+                    let errorMessage = '驗證失敗，請重試。';
+                    
+                    if (data.error.includes('expired')) {
+                        errorMessage = '驗證連結已過期。請重新註冊或聯繫客服。';
+                    } else if (data.error.includes('Invalid')) {
+                        errorMessage = '驗證連結無效。請檢查電子郵件中的完整連結。';
+                    }
+                    
+                    this.showError('驗證失敗', errorMessage);
+                }
+            } catch (error) {
+                console.error('Verification error:', error);
+                this.showError('系統錯誤', '驗證過程中發生錯誤，請稍後再試或聯繫客服。');
+            }
+        }
+
+        showSuccess(title, message) {
+            document.getElementById('verification-content').innerHTML = `
+                <div class="verification-icon">✅</div>
+                <h1 class="verification-title status-success">${title}</h1>
+                <p class="verification-message status-success">${message}</p>
+                <p class="verification-message" style="font-size: 14px; margin-top: 20px;">
+                    3秒後將自動跳轉到首頁...
+                </p>
+            `;
+        }
+
+        showError(title, message) {
+            document.getElementById('verification-content').innerHTML = `
+                <div class="verification-icon">❌</div>
+                <h1 class="verification-title status-error">${title}</h1>
+                <p class="verification-message status-error">${message}</p>
+            `;
+        }
+    }
+
+    // Initialize verification when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        new EmailVerification();
+    });
+    </script>
+</body>
+</html>
+{{ end }}

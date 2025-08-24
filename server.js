@@ -10,6 +10,7 @@ const authRoutes = require('./routes/auth');
 const commentRoutes = require('./routes/comments');
 const userRoutes = require('./routes/users');
 const adminRoutes = require('./routes/admin');
+const { trackErrors, track404 } = require('./middleware/invalidRequestTracker');
 
 const app = express();
 
@@ -66,8 +67,12 @@ app.use('/api/admin', adminRoutes);
 app.use(express.static('public'));
 
 app.get('/admin', (req, res) => {
-  res.sendFile(__dirname + '/public/admin.html');
+  res.sendFile(__dirname + '/public/admin/index.html');
 });
+
+// 無效請求追蹤中間件 (必須在所有路由之後)
+app.use(track404); // 處理404錯誤
+app.use(trackErrors); // 處理其他錯誤
 
 app.use((err, req, res, next) => {
   console.error(err.stack);

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理後台 - Hugo 遊戲網站</title>
+    <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+    <!-- 登入畫面 -->
+    <div id="loginScreen" class="login-form">
+        <h2 style="text-align: center; margin-bottom: 1.5rem;">🎮 管理員登入</h2>
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="email">電子信箱</label>
+                <input type="email" id="email" required>
+            </div>
+            <div class="form-group">
+                <label for="password">密碼</label>
+                <input type="password" id="password" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">登入</button>
+        </form>
+        <div id="loginError"></div>
+    </div>
+
+    <!-- 管理面板 -->
+    <div id="adminPanel" style="display: none;">
+        <header class="header">
+            <h1>Hugo 遊戲網站 - 管理後台</h1>
+        </header>
+
+        <nav class="nav">
+            <ul class="nav-list">
+                <li class="nav-item active" data-tab="dashboard">📊 儀表板</li>
+                <li class="nav-item" data-tab="users">👥 用戶管理</li>
+                <li class="nav-item" data-tab="comments">💬 留言管理</li>
+                <li class="nav-item" data-tab="blacklist">🚫 黑名單管理</li>
+                <li class="nav-item" data-tab="invalid-requests">⚠️ 無效請求</li>
+                <li class="nav-item" data-tab="stats">📈 統計資料</li>
+            </ul>
+        </nav>
+
+        <div class="container">
+            <!-- 儀表板 -->
+            <div id="dashboard" class="tab-content active">
+                <div class="stats-grid" id="statsGrid">
+                    <!-- 統計卡片將由 JavaScript 動態生成 -->
+                </div>
+                
+                <div class="card">
+                    <h3>最新用戶</h3>
+                    <table class="table" id="recentUsersTable">
+                        <thead>
+                            <tr>
+                                <th>暱稱</th>
+                                <th>電子信箱</th>
+                                <th>註冊時間</th>
+                                <th>狀態</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+                <div class="card">
+                    <h3>最新留言</h3>
+                    <table class="table" id="recentCommentsTable">
+                        <thead>
+                            <tr>
+                                <th>作者</th>
+                                <th>內容</th>
+                                <th>時間</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 用戶管理 -->
+            <div id="users" class="tab-content">
+                <div class="card">
+                    <h3>用戶管理</h3>
+                    <input type="text" class="search-box" id="userSearch" placeholder="搜尋用戶...">
+                    <table class="table" id="usersTable">
+                        <thead>
+                            <tr>
+                                <th>暱稱</th>
+                                <th>電子信箱</th>
+                                <th>角色</th>
+                                <th>狀態</th>
+                                <th>權限</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                    <div class="pagination" id="usersPagination"></div>
+                </div>
+            </div>
+
+            <!-- 留言管理 -->
+            <div id="comments" class="tab-content">
+                <div class="card">
+                    <h3>留言管理</h3>
+                    <div class="filter-group">
+                        <input type="text" class="search-box" id="postIdFilter" placeholder="文章 ID 過濾...">
+                        <label>
+                            <input type="checkbox" id="includeHidden"> 顯示隱藏留言
+                        </label>
+                    </div>
+                    <table class="table" id="commentsTable">
+                        <thead>
+                            <tr>
+                                <th>作者</th>
+                                <th>文章</th>
+                                <th>內容</th>
+                                <th>評分</th>
+                                <th>時間</th>
+                                <th>狀態</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                    <div class="pagination" id="commentsPagination"></div>
+                </div>
+            </div>
+
+            <!-- IP黑名單管理 -->
+            <div id="blacklist" class="tab-content">
+                <div class="card">
+                    <h3>IP 黑名單管理</h3>
+                    <div style="margin-bottom: 1rem;">
+                        <button class="btn btn-primary" onclick="window.adminCommon.openModal('addBlacklistModal')">
+                            ➕ 添加 IP
+                        </button>
+                        <button class="btn btn-warning" onclick="window.adminCommon.openModal('bulkImportModal')">
+                            📥 批量導入
+                        </button>
+                        <button class="btn btn-success" onclick="window.blacklist.exportBlacklist()">
+                            📤 匯出列表
+                        </button>
+                    </div>
+                    <table class="table" id="blacklistTable">
+                        <thead>
+                            <tr>
+                                <th>IP 地址</th>
+                                <th>原因</th>
+                                <th>創建者</th>
+                                <th>過期時間</th>
+                                <th>狀態</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                    <div class="pagination" id="blacklistPagination"></div>
+                </div>
+            </div>
+
+            <!-- 無效請求管理 -->
+            <div id="invalid-requests" class="tab-content">
+                <div class="stats-grid" id="invalidRequestsStats">
+                    <!-- 統計卡片將由 JavaScript 動態生成 -->
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                    <div class="card">
+                        <div id="statusCodeStats"></div>
+                    </div>
+                    <div class="card">
+                        <div id="topMaliciousIPs"></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3>無效請求記錄</h3>
+                        <div>
+                            <button class="btn btn-primary" id="refreshRequestsBtn">🔄 刷新</button>
+                            <button class="btn btn-success" id="exportRequestsBtn">📤 匯出</button>
+                            <button class="btn btn-danger" id="clearAllRequestsBtn">🗑️ 清空</button>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 1rem;">
+                        <input type="text" class="search-box" id="ipFilter" placeholder="按 IP 地址過濾...">
+                    </div>
+                    
+                    <table class="table" id="invalidRequestsTable">
+                        <thead>
+                            <tr>
+                                <th>IP 地址</th>
+                                <th>請求詳情</th>
+                                <th>狀態碼</th>
+                                <th>錯誤信息</th>
+                                <th>時間</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                    <div class="pagination" id="invalidRequestsPagination"></div>
+                </div>
+            </div>
+
+            <!-- 統計資料 -->
+            <div id="stats" class="tab-content">
+                <div class="card">
+                    <h3>詳細統計</h3>
+                    <div id="detailedStats">
+                        <!-- 詳細統計將由 JavaScript 動態生成 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加IP黑名單模態框 -->
+    <div id="addBlacklistModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4>添加 IP 到黑名單</h4>
+                <span class="close">&times;</span>
+            </div>
+            <form id="addBlacklistForm">
+                <div class="form-group">
+                    <label for="blacklistIP">IP 地址 *</label>
+                    <input type="text" id="blacklistIP" required placeholder="例: 192.168.1.1 或 192.168.1.0/24">
+                </div>
+                <div class="form-group">
+                    <label for="blacklistType">類型 *</label>
+                    <select id="blacklistType" required>
+                        <option value="exact">精確匹配</option>
+                        <option value="subnet">子網路 (CIDR)</option>
+                        <option value="range">IP 範圍</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="blacklistReason">原因</label>
+                    <textarea id="blacklistReason" placeholder="封鎖原因..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="blacklistExpires">過期時間 (可選)</label>
+                    <input type="datetime-local" id="blacklistExpires">
+                </div>
+                <div style="text-align: right;">
+                    <button type="button" class="btn btn-secondary" onclick="window.adminCommon.closeModal('addBlacklistModal')">取消</button>
+                    <button type="submit" class="btn btn-primary">添加</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 批量導入模態框 -->
+    <div id="bulkImportModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4>批量導入 IP</h4>
+                <span class="close">&times;</span>
+            </div>
+            <form id="bulkImportForm">
+                <div class="form-group">
+                    <label for="bulkImportIPs">IP 地址列表 (每行一個)</label>
+                    <textarea id="bulkImportIPs" rows="10" placeholder="192.168.1.1&#10;192.168.1.2&#10;10.0.0.0/8"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="bulkImportType">類型</label>
+                    <select id="bulkImportType">
+                        <option value="exact">精確匹配</option>
+                        <option value="subnet">子網路 (CIDR)</option>
+                        <option value="range">IP 範圍</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="bulkImportReason">統一原因</label>
+                    <input type="text" id="bulkImportReason" placeholder="批量封鎖原因...">
+                </div>
+                <div style="text-align: right;">
+                    <button type="button" class="btn btn-secondary" onclick="window.adminCommon.closeModal('bulkImportModal')">取消</button>
+                    <button type="submit" class="btn btn-primary">導入</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 載入 JavaScript 模組 -->
+    <script src="js/common.js"></script>
+    <script src="js/dashboard.js"></script>
+    <script src="js/users.js"></script>
+    <script src="js/comments.js"></script>
+    <script src="js/stats.js"></script>
+    <script src="js/blacklist.js"></script>
+    <script src="js/invalid-requests.js"></script>
+</body>
+</html>

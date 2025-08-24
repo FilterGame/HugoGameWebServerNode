@@ -40,6 +40,9 @@
             <button id="profile-btn" class="profile-btn">設定</button>
             <button id="logout-btn" class="logout-btn">登出</button>
         </div>
+        
+        <!-- Email verification notice -->
+        {{ partial "email-verification.html" . }}
     </div>
 
     <!-- 個人檔案編輯 -->
@@ -945,13 +948,17 @@ class CommentSystem {
                 avatar.style.display = 'none';
             }
 
-            // 顯示評分和留言區域
-            if (this.user.permissions.canRate) {
+            // Check email verification status
+            const emailVerificationRequired = window.emailVerificationManager && 
+                window.emailVerificationManager.checkEmailVerificationStatus(this.user);
+            
+            // 顯示評分和留言區域 (only if email is verified or verification is disabled)
+            if (this.user.permissions.canRate && !emailVerificationRequired) {
                 ratingSection.style.display = 'block';
                 this.updateStarDisplay(this.userRating || 0);
             }
             
-            if (this.user.permissions.canComment) {
+            if (this.user.permissions.canComment && !emailVerificationRequired) {
                 commentSection.style.display = 'block';
             }
         } else {

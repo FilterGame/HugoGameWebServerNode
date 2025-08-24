@@ -1,10 +1,47 @@
+# === 基本設定 ===
 NODE_ENV=development
 PORT=3000
 MONGODB_URI=mongodb://localhost:27017/hugo-comments
+
+# === JWT 認證 ===
 JWT_SECRET=your-super-secret-jwt-key-here
 JWT_EXPIRES_IN=7d
+
+# === 管理員帳號 ===
 ADMIN_EMAIL=admin@example.com
 ADMIN_PASSWORD=admin123
+
+# === CORS 設定 ===
 CORS_ORIGIN=http://localhost:1313
-MAX_AVATAR_SIZE=100000
-AVATAR_QUALITY=80
+
+# === 頭像上傳設定 ===
+MAX_AVATAR_SIZE=100000  # 最大檔案大小 (bytes)
+AVATAR_QUALITY=80       # JPEG 壓縮品質 (1-100)
+
+# === 電子郵件驗證設定 ===
+# 是否啟用電子郵件驗證 (true/false)
+EMAIL_VERIFICATION_ENABLED=true
+
+# === 郵件服務設定 ===
+# SMTP 伺服器設定
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_SECURE=false
+EMAIL_USER=your-email@gmail.com
+EMAIL_PASSWORD=your-app-password
+
+# 寄件者資訊
+EMAIL_FROM=your-email@gmail.com
+EMAIL_FROM_NAME=Hugo Game Website
+
+# === 郵件內容設定 ===
+# 驗證郵件主旨
+EMAIL_VERIFICATION_SUBJECT=請驗證您的電子郵件地址
+
+# 網站相關
+WEBSITE_NAME=Hugo Game Website
+FRONTEND_URL=http://localhost:1313
+
+# === 頻率限制設定 ===
+# 重新發送驗證郵件的冷卻時間 (分鐘)
+EMAIL_RESEND_COOLDOWN_MINUTES=5
